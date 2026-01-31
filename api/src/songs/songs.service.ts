@@ -1,0 +1,47 @@
+import { Injectable } from '@nestjs/common';
+import { CreateSongDto } from './dto/create-song.dto';
+import { UpdateSongDto } from './dto/update-song.dto';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class SongsService {
+  constructor(private prisma: PrismaService) {}
+
+  create(createSongDto: CreateSongDto) {
+    return this.prisma.song.create({
+      data: {
+        title: createSongDto.title,
+        artist: createSongDto.artist,
+        bpm: createSongDto.bpm,
+        key: createSongDto.key,
+        isrc: createSongDto.isrc,
+      },
+    });
+  }
+
+  findAll() {
+    return this.prisma.song.findMany({
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  findOne(id: string) {
+    return this.prisma.song.findUnique({
+      where: { id },
+      include: { versions: true, assets: true },
+    });
+  }
+
+  update(id: string, updateSongDto: UpdateSongDto) {
+    return this.prisma.song.update({
+      where: { id },
+      data: updateSongDto,
+    });
+  }
+
+  remove(id: string) {
+    return this.prisma.song.delete({
+      where: { id },
+    });
+  }
+}

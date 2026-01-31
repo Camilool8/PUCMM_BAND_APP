@@ -1,0 +1,125 @@
+# ===========================
+# PUCMM Band App - Root .gitignore
+# Handles both /api (NestJS) and /web (Next.js)
+# ===========================
+
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ===========================
+# Build Outputs
+# ===========================
+# NestJS (api)
+api/dist/
+api/build/
+
+# Next.js (web)
+web/.next/
+web/out/
+web/build/
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.env
+
+# ===========================
+# Database
+# ===========================
+*.db
+*.sqlite
+*.sqlite3
+
+# Prisma
+api/prisma/migrations/**/migration_lock.toml
+
+# ===========================
+# IDE & Editor
+# ===========================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ===========================
+# OS Generated Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ===========================
+# Testing & Coverage
+# ===========================
+coverage/
+.nyc_output/
+*.lcov
+junit.xml
+
+# ===========================
+# Logs & Debug
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+next-env.d.ts
+
+# ===========================
+# Misc
+# ===========================
+.turbo/
+*.pem
+.vercel/
+.cache/
+
+# Uploaded files (local storage)
+uploads/
+storage/
+
+# Sentry
+.sentryclirc
+
+# PWA
+**/public/sw.js
+**/public/workbox-*.js
+**/public/worker-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+**/public/worker-*.js.map

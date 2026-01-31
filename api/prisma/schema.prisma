@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPERADMIN
+  SECTION_LEADER
+  MEMBER
+  ALUMNI_GUEST
+}
+
+enum SongStatus {
+  PENDING
+  REHEARSING
+  READY
+  ARCHIVED
+}
+
+enum AssetType {
+  SCORE
+  VIDEO
+  AUDIO
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  name        String?
+  role        Role     @default(MEMBER)
+  instruments String[]
+  phone       String?
+  jobTitle    String?  // From Azure AD
+  department  String?  // From Azure AD
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  suggestions Song[]      @relation("UserSuggestions")
+  leadVocals  Song[]      @relation("SongLeadVocals")
+  auditLogs   AuditLog[]
+
+  @@map("users")
+}
+
+model Song {
+  id          String     @id @default(uuid())
+  title       String
+  artist      String
+  bpm         Int?
+  key         String?
+  status      SongStatus @default(PENDING)
+  coverUrl    String?
+  durationMs  Int?
+  releaseDate DateTime?
+  isrc        String?    @unique
+  
+  // Relations
+  suggestedBy   User?   @relation("UserSuggestions", fields: [suggestedById], references: [id])
+  suggestedById String?
+  
+  leadVocals    User[]  @relation("SongLeadVocals")
+  
+  versions      SongVersion[]
+  tags          Tag[]
+  events        Event[]
+  assets        Asset[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("songs")
+}
+
+model SongVersion {
+  id          String   @id @default(uuid())
+  name        String   // e.g., "Studio", "Live", "Remix"
+  songId      String
+  song        Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@map("song_versions")
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime
+  location    String?
+  type        String?
+  songs       Song[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("events")
+}
+
+model Asset {
+  id            String    @id @default(uuid())
+  type          AssetType
+  url           String    // Local path or URL
+  instrumentTag String?   // e.g., "Alto Sax"
+  songId        String
+  song          Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime  @default(now())
+
+  @@map("assets")
+}
+
+model Tag {
+  id    String @id @default(uuid())
+  name  String @unique
+  songs Song[]
+
+  @@map("tags")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@map("audit_logs")
+}
