@@ -155,7 +155,7 @@ function Modal({
         onClose();
       }
     },
-    [closeOnEscape, onClose]
+    [closeOnEscape, onClose],
   );
 
   useEffect(() => {
@@ -186,9 +186,9 @@ function Modal({
       >
         <div
           className={cn(
-            "fixed inset-0 z-[9999] flex items-center justify-center p-4",
+            "fixed inset-0 z-9999 flex items-center justify-center p-4",
             "transition-opacity duration-200 ease-out",
-            isAnimating ? "opacity-100" : "opacity-0"
+            isAnimating ? "opacity-100" : "opacity-0",
           )}
           onClick={handleBackdropClick}
           data-modal-backdrop
@@ -198,7 +198,7 @@ function Modal({
             className={cn(
               "absolute inset-0 bg-black/70 backdrop-blur-xl",
               "transition-opacity duration-200",
-              isAnimating ? "opacity-100" : "opacity-0"
+              isAnimating ? "opacity-100" : "opacity-0",
             )}
             aria-hidden="true"
           />
@@ -225,7 +225,7 @@ function Modal({
                 : "opacity-0 scale-95 translate-y-3",
               // Layout
               "max-h-[90vh] flex flex-col overflow-hidden",
-              className
+              className,
             )}
             onClick={(e) => e.stopPropagation()}
           >
@@ -239,7 +239,7 @@ function Modal({
                   "bg-white/5 hover:bg-white/10",
                   "text-gray-400 hover:text-white",
                   "transition-all duration-150",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow",
                 )}
                 aria-label="Cerrar"
               >
@@ -261,13 +261,18 @@ function Modal({
 // Compound Components
 // ============================================================================
 
-function ModalHeader({ children, className, icon, subtitle }: ModalHeaderProps) {
+function ModalHeader({
+  children,
+  className,
+  icon,
+  subtitle,
+}: ModalHeaderProps) {
   return (
     <div
       className={cn(
         "shrink-0 px-6 pt-6 pb-4",
         "border-b border-white/5",
-        className
+        className,
       )}
     >
       <div className="flex items-start gap-4 pr-8">
@@ -296,7 +301,7 @@ function ModalBody({ children, className }: ModalBodyProps) {
         "flex-1 overflow-y-auto",
         "px-6 py-4",
         "scrollbar-hide",
-        className
+        className,
       )}
     >
       {children}
@@ -311,7 +316,7 @@ function ModalFooter({ children, className }: ModalFooterProps) {
         "shrink-0 px-6 py-4",
         "border-t border-white/5",
         "bg-surface-100/30",
-        className
+        className,
       )}
     >
       {children}
