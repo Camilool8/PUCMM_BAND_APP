@@ -15,6 +15,7 @@ export class SongsService {
         bpm: createSongDto.bpm,
         key: createSongDto.key,
         isrc: createSongDto.isrc,
+        status: createSongDto.status, // Will default to PENDING if not provided
       },
     });
   }

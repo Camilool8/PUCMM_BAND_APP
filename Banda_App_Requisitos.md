@@ -60,13 +60,34 @@ El sistema debe implementar Control de Acceso Basado en Roles (RBAC) granular.
   - Subida de archivos `.mp4` optimizados.
   - Reproductor HTML5 personalizado con funciones de bucle (A-B repeat) y control de velocidad (0.5x, 0.75x) para facilitar el ensayo/práctica.
 
-#### 3.4 Módulo de Eventos y Setlists
+#### 3.4 Módulo de Eventos, Conciertos y Setlists
 
 - **RF-009: Setlists Dinámicos.**
   - Interfaz Drag-and-Drop para reordenar canciones.
   - Bloques de "Intermedio" o "Discurso" que no son canciones pero suman tiempo.
 - **RF-010: Cálculo de Tiempo Real.** Sumatoria automática de la duración de las canciones + tiempos de transición configurables (ej: 30s entre canciones) para estimar la duración total del show.
 - **RF-011: Modo "On Stage" (Live).** Vista simplificada para usar en tablet durante el show: Texto gigante, fondo negro puro, setlist vertical, acceso a partitura en 1 toque.
+
+- **RF-014: Sugerencias a Repertorio o Evento.**
+  - Los miembros pueden sugerir canciones al **repertorio general** (sin evento específico) o directamente a un **evento específico**.
+  - Al sugerir a un evento, la canción aparece en el setlist del evento como "Pendiente".
+  - Las canciones del repertorio general pueden ser agregadas a eventos posteriormente por el Admin.
+
+- **RF-015: Gestión de Conciertos (Performances).**
+  - Cada Evento puede tener múltiples **Conciertos** (fechas específicas donde se realizó la presentación).
+  - Un Concierto registra:
+    - `fecha` y `lugar` de la presentación.
+    - `canciones tocadas` (por defecto hereda las del Evento, pero puede modificarse si hubo cambios improvisados).
+    - `videos` del concierto (video completo o por canción).
+    - `notas` opcionales (ej: "El bajo falló en la canción 3").
+  - Los miembros pueden navegar a un Evento, ver la pestaña "Conciertos", seleccionar una fecha y ver las canciones que se tocaron ese día con sus videos.
+
+- **RF-016: Videos de Concierto.**
+  - Cada Concierto puede tener:
+    - Un **video completo** del show.
+    - **Videos individuales** por canción tocada.
+  - Los videos se almacenan como Assets del tipo `VIDEO` relacionados al Concierto.
+  - Reproductor HTML5 con controles de velocidad y bucle A-B.
 
 #### 3.5 Módulo de Colaboración
 
@@ -79,9 +100,10 @@ El sistema debe implementar Control de Acceso Basado en Roles (RBAC) granular.
 | Entidad      | Campos Clave                                                                                   | Relaciones                                                   |
 | :----------- | :--------------------------------------------------------------------------------------------- | :----------------------------------------------------------- |
 | **User**     | `id`, `email`, `role`, `instruments[]`, `phone`                                                | `OneToMany` Sugerencias, `ManyToMany` Canciones (LeadVocals) |
-| **Song**     | `id`, `title`, `artist`, `bpm`, `key`, `status` (`PENDING`, `REHEARSING`, `READY`, `ARCHIVED`) | `OneToMany` Versiones, `ManyToMany` Tags/Genres              |
-| **Event**    | `id`, `name`, `date`, `location`, `type`                                                       | `ManyToMany` Songs (con campo extra `order_index`)           |
-| **Asset**    | `id`, `type` (`SCORE`, `VIDEO`, `AUDIO`), `url`, `instrument_tag`                              | `ManyToOne` Song                                             |
+| **Song**     | `id`, `title`, `artist`, `bpm`, `key`, `status` (`PENDING`, `REHEARSING`, `READY`, `ARCHIVED`), `eventId?` | `OneToMany` Versiones, `ManyToMany` Tags/Genres, `ManyToOne` Event (opcional) |
+| **Event**    | `id`, `name`, `description`, `type` (recurrente)                                               | `OneToMany` Songs, `OneToMany` Concerts                      |
+| **Concert**  | `id`, `date`, `location`, `notes`, `eventId`                                                   | `ManyToOne` Event, `ManyToMany` Songs (tocadas), `OneToMany` Assets (videos) |
+| **Asset**    | `id`, `type` (`SCORE`, `VIDEO`, `AUDIO`), `url`, `instrument_tag`, `songId?`, `concertId?`     | `ManyToOne` Song (opcional), `ManyToOne` Concert (opcional)  |
 | **AuditLog** | `id`, `user_id`, `action`, `timestamp`, `metadata`                                             | `ManyToOne` User                                             |
 
 ### 6. Plan de Desarrollo: Fases

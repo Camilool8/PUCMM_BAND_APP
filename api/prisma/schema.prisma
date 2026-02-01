@@ -70,7 +70,8 @@ model Song {
   
   versions      SongVersion[]
   tags          Tag[]
-  events        Event[]
+  events        Event[]       // Planned events
+  concerts      Concert[]     @relation("ConcertSongs") // Concerts where actually played
   assets        Asset[]
 
   createdAt     DateTime @default(now())
@@ -92,25 +93,54 @@ model SongVersion {
 model Event {
   id          String   @id @default(uuid())
   name        String
-  date        DateTime
-  location    String?
-  type        String?
+  description String?
+  type        String?  // e.g., "Navidad", "Graduación", "Extracurricular"
+  imageUrl    String?
   songs       Song[]
-  
+  concerts    Concert[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("events")
 }
 
+model Concert {
+  id          String   @id @default(uuid())
+  date        DateTime
+  location    String?
+  notes       String?
+
+  // Parent event
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String
+
+  // Songs actually played (may differ from event's planned songs)
+  songsPlayed Song[]   @relation("ConcertSongs")
+
+  // Videos of this specific performance
+  assets      Asset[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("concerts")
+}
+
 model Asset {
   id            String    @id @default(uuid())
   type          AssetType
   url           String    // Local path or URL
-  instrumentTag String?   // e.g., "Alto Sax"
-  songId        String
-  song          Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
-  
+  name          String?   // Display name for the asset
+  instrumentTag String?   // e.g., "Alto Sax" (for scores)
+
+  // Can belong to a Song (scores, practice videos) OR a Concert (performance videos)
+  songId        String?
+  song          Song?     @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  concertId     String?
+  concert       Concert?  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+
   createdAt     DateTime  @default(now())
 
   @@map("assets")
