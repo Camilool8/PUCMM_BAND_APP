@@ -115,6 +115,7 @@ export function useAuth() {
   const isAdmin = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
   const canManageUsers = effectiveRole === "SUPERADMIN";
   const canManageSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
+  const canManageEvents = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
   // Members can suggest, students (ALUMNI_GUEST) can only view
   const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
   // Only band members (not ALUMNI_GUEST) can edit their profile
@@ -163,6 +164,7 @@ export function useAuth() {
     isAdmin,
     canManageUsers,
     canManageSongs,
+    canManageEvents,
     canSuggestSongs,
     canEditProfile,
     // Dev mode

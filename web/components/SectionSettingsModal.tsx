@@ -39,6 +39,24 @@ const ICON_OPTIONS: { name: string; icon: LucideIcon; label: string }[] = [
   { name: "Zap", icon: Zap, label: "Rayo" },
 ];
 
+// Color mapping from Tailwind class names to hex values
+const COLOR_MAP: Record<string, string> = {
+  "brand-blue-primary": "#0033A0",
+  "indigo-600": "#4F46E5",
+  "amber-500": "#F59E0B",
+  "orange-600": "#EA580C",
+  "gray-500": "#6B7280",
+  "gray-700": "#374151",
+  "emerald-500": "#10B981",
+  "teal-600": "#0D9488",
+  "pink-500": "#EC4899",
+  "rose-600": "#E11D48",
+  "purple-500": "#A855F7",
+  "violet-600": "#7C3AED",
+};
+
+const getColor = (colorName: string): string => COLOR_MAP[colorName] || colorName;
+
 // Predefined gradient themes
 const GRADIENT_THEMES = [
   {
@@ -314,7 +332,10 @@ export default function SectionSettingsModal({
                 >
                   {/* Gradient preview */}
                   <div
-                    className={`absolute inset-0 bg-linear-to-br from-${theme.iconGradientFrom} to-${theme.iconGradientTo} opacity-30`}
+                    className="absolute inset-0 opacity-30"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${getColor(theme.iconGradientFrom)}, ${getColor(theme.iconGradientTo)})`,
+                    }}
                   />
                   <div className="relative text-center">
                     <span className="text-sm text-white">{theme.name}</span>

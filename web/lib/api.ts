@@ -96,6 +96,74 @@ export interface CreateAssetDto {
 }
 
 // ============================================================================
+// Events Types
+// ============================================================================
+
+export interface Event {
+  id: string;
+  name: string;
+  description: string | null;
+  // Visual customization
+  iconName: string | null;
+  bannerUrl: string | null;
+  gradientFrom: string | null;
+  gradientVia: string | null;
+  gradientTo: string | null;
+  iconGradientFrom: string | null;
+  iconGradientTo: string | null;
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+  // Relations
+  songs?: Song[];
+  concerts?: Concert[];
+  _count?: {
+    songs: number;
+    concerts: number;
+  };
+}
+
+export interface Concert {
+  id: string;
+  date: string;
+  location: string | null;
+  notes: string | null;
+  eventId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateEventDto {
+  name: string;
+  description?: string;
+  // Visual customization
+  iconName?: string;
+  bannerUrl?: string;
+  gradientFrom?: string;
+  gradientVia?: string;
+  gradientTo?: string;
+  iconGradientFrom?: string;
+  iconGradientTo?: string;
+  // Initial songs
+  songIds?: string[];
+}
+
+export interface UpdateEventDto {
+  name?: string;
+  description?: string;
+  // Visual customization
+  iconName?: string;
+  bannerUrl?: string;
+  gradientFrom?: string;
+  gradientVia?: string;
+  gradientTo?: string;
+  iconGradientFrom?: string;
+  iconGradientTo?: string;
+  // Songs
+  songIds?: string[];
+}
+
+// ============================================================================
 // Repertoire Sections Types
 // ============================================================================
 
@@ -313,6 +381,49 @@ class ApiClient {
 
   async clearSectionBanner(key: string): Promise<RepertoireSection> {
     return this.request<RepertoireSection>(`/repertoire-sections/${key}/banner`, {
+      method: "DELETE",
+    });
+  }
+
+  // ============================================================================
+  // Events
+  // ============================================================================
+
+  async getEvents(): Promise<Event[]> {
+    return this.request<Event[]>("/events");
+  }
+
+  async getEvent(id: string): Promise<Event> {
+    return this.request<Event>(`/events/${id}`);
+  }
+
+  async createEvent(data: CreateEventDto): Promise<Event> {
+    return this.request<Event>("/events", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEvent(id: string, data: UpdateEventDto): Promise<Event> {
+    return this.request<Event>(`/events/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    await this.request(`/events/${id}`, { method: "DELETE" });
+  }
+
+  async addSongToEvent(eventId: string, songId: string): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/songs`, {
+      method: "POST",
+      body: JSON.stringify({ songId }),
+    });
+  }
+
+  async removeSongFromEvent(eventId: string, songId: string): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/songs/${songId}`, {
       method: "DELETE",
     });
   }

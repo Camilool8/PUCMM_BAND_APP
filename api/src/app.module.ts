@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { RepertoireSectionsModule } from './repertoire-sections/repertoire-sections.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RepertoireSectionsModule } from './repertoire-sections/repertoire-secti
     UsersModule,
     UploadsModule,
     RepertoireSectionsModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

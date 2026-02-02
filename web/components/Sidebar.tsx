@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, LogOut, Users, Shield, Settings } from "lucide-react";
+import { Home, Music, Calendar, LogOut, Users, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
@@ -54,6 +54,17 @@ export default function Sidebar() {
             <Music size={20} />
             Repertorio
           </Link>
+          <Link
+            href="/events"
+            className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+              pathname === "/events"
+                ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <Calendar size={20} />
+            Eventos
+          </Link>
 
           {/* Admin Section */}
           {canManageUsers && (
@@ -78,9 +89,6 @@ export default function Sidebar() {
               Próximamente
             </h3>
             <div className="space-y-1 px-4">
-              <p className="text-xs text-gray-600 flex items-center gap-2">
-                <span>📅</span> Eventos
-              </p>
               <p className="text-xs text-gray-600 flex items-center gap-2">
                 <span>🎵</span> Géneros
               </p>

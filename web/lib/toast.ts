@@ -12,6 +12,13 @@ export const TOAST_MESSAGES = {
   // Users
   ROLE_UPDATED: "Rol actualizado exitosamente",
 
+  // Events
+  EVENT_CREATED: "Evento creado exitosamente",
+  EVENT_UPDATED: "Evento actualizado",
+  EVENT_DELETED: "Evento eliminado",
+  SONG_ADDED_TO_EVENT: "Cancion agregada al evento",
+  SONG_REMOVED_FROM_EVENT: "Cancion removida del evento",
+
   // Uploads
   UPLOAD_SUCCESS: "Archivo subido exitosamente",
   UPLOAD_ERROR: "Error al subir archivo",

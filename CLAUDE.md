@@ -171,6 +171,53 @@ Custom utilities: `text-display`, `text-h1`, `glass`, `glass-strong`, `animate-f
 - Use `bg-linear-to-b` and `bg-linear-to-br` (Tailwind 4 canonical syntax)
 - Avoid `bg-gradient-to-*` (older syntax, still works but linter warns)
 
+### Mobile-First Design Guidelines
+**CRITICAL**: This app is primarily used on mobile devices. Always design mobile-first.
+
+1. **Admin Controls Must Always Be Visible**
+   - Never hide admin buttons/controls on mobile with `hidden md:flex`
+   - Use smaller sizes on mobile: `w-8 h-8 md:w-10 md:h-10`
+   - Admin features should be accessible on all screen sizes
+
+2. **Horizontal Scrolling for Tabs/Navigation**
+   - Use `overflow-x-auto scrollbar-hide` for tab containers
+   - Add `whitespace-nowrap shrink-0` to tab buttons
+   - Reduce padding on mobile: `px-3 md:px-4 py-1.5 md:py-2`
+
+3. **Responsive Text & Spacing**
+   - Text: `text-sm md:text-base` or `text-xs md:text-sm`
+   - Gaps: `gap-1.5 md:gap-2` or `gap-2 md:gap-3`
+   - Padding: `px-3 md:px-4`, `py-2 md:py-2.5`
+
+4. **Icon Sizes**
+   - Mobile: `size={16}` or explicit `w-4 h-4`
+   - Desktop: `md:w-[18px] md:h-[18px]` or `md:w-5 md:h-5`
+
+5. **Touch Targets**
+   - Minimum touch target: 44x44px on mobile
+   - Use `py-2` minimum for buttons
+   - Add `active:scale-95` for touch feedback
+
+6. **Common Mobile Patterns**
+```tsx
+// Scrollable tabs
+<div className="flex gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide">
+  <button className="px-3 md:px-4 py-1.5 md:py-2 text-sm md:text-base whitespace-nowrap shrink-0">
+    Tab
+  </button>
+</div>
+
+// Always-visible admin button
+<button className="flex w-8 h-8 md:w-10 md:h-10 ...">
+  <Icon size={16} className="md:w-[18px] md:h-[18px]" />
+</button>
+
+// Responsive action bar
+<div className="flex items-center gap-2 md:gap-3">
+  <span className="text-xs md:text-sm ml-auto whitespace-nowrap">Info</span>
+</div>
+```
+
 ## Reusable Patterns
 
 ### Modal Component (Compound Pattern)

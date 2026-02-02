@@ -96,8 +96,18 @@ model Event {
   id          String   @id @default(uuid())
   name        String
   description String?
-  type        String?  // e.g., "Navidad", "Graduación", "Extracurricular"
-  imageUrl    String?
+
+  // Visual customization (like RepertoireSection)
+  iconName         String?  // Lucide icon name (e.g., "TreePine", "GraduationCap", "Music")
+  bannerUrl        String?  // Custom banner image URL
+  // Gradient colors for styling
+  gradientFrom     String?  // e.g., "red-600/60"
+  gradientVia      String?  // e.g., "red-700/40"
+  gradientTo       String?  // e.g., "transparent"
+  // Icon background gradient
+  iconGradientFrom String?  // e.g., "red-600"
+  iconGradientTo   String?  // e.g., "red-700"
+
   songs       Song[]
   concerts    Concert[]
 
