@@ -6,6 +6,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SongsModule } from './songs/songs.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { RepertoireSectionsModule } from './repertoire-sections/repertoire-sections.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { UsersModule } from './users/users.module';
     SongsModule,
     AuthModule,
     UsersModule,
+    UploadsModule,
+    RepertoireSectionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,6 +15,7 @@ export interface User {
   name: string;
   email: string;
   initials: string;
+  avatarUrl: string | null;
   role: Role;
   displayRole: string;
   isSuperAdmin: boolean;
@@ -97,6 +98,7 @@ export function useAuth() {
         name: dbUser.name || account?.name || account?.username?.split("@")[0] || "Usuario",
         email: dbUser.email,
         initials: getInitials(dbUser.name || account?.name || account?.username || "U"),
+        avatarUrl: dbUser.avatarUrl || null,
         role: dbUser.role,
         displayRole: ROLE_DISPLAY_NAMES[dbUser.role],
         isSuperAdmin: dbUser.role === "SUPERADMIN",
@@ -115,6 +117,8 @@ export function useAuth() {
   const canManageSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
   // Members can suggest, students (ALUMNI_GUEST) can only view
   const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
+  // Only band members (not ALUMNI_GUEST) can edit their profile
+  const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
 
   // Check if current user is the superadmin (for showing dev toggle)
   const showDevToggle =
@@ -160,6 +164,7 @@ export function useAuth() {
     canManageUsers,
     canManageSongs,
     canSuggestSongs,
+    canEditProfile,
     // Dev mode
     showDevToggle,
     devViewRole,

@@ -15,8 +15,12 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const VALID_ROLES = Object.values(Role);
+
+// Roles that can edit their own profile (band members, not alumni/guests)
+const EDITABLE_PROFILE_ROLES = [Role.SUPERADMIN, Role.SECTION_LEADER, Role.MEMBER];
 
 @Controller('users')
 @UseGuards(AzureAdGuard)
@@ -27,6 +31,22 @@ export class UsersController {
   @Get('me')
   getMe(@Request() req) {
     return req.user.dbUser;
+  }
+
+  // Update current user's profile (band members only, not ALUMNI_GUEST)
+  @Patch('me/profile')
+  async updateMyProfile(
+    @Request() req,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    const currentUser = req.user.dbUser;
+
+    // Only band members can edit their profile
+    if (!EDITABLE_PROFILE_ROLES.includes(currentUser.role)) {
+      throw new ForbiddenException('Solo los miembros de la banda pueden editar su perfil');
+    }
+
+    return this.usersService.updateProfile(currentUser.id, updateProfileDto);
   }
 
   // List all users (SUPERADMIN only)

@@ -20,6 +20,53 @@ async function main() {
   });
 
   console.log(`SUPERADMIN user created/updated: ${superadmin.email} (${superadmin.role})`);
+
+  // Seed default repertoire sections
+  const defaultSections = [
+    {
+      key: 'repertorio',
+      title: 'Repertorio Activo',
+      subtitle: 'Canciones listas y en ensayo',
+      iconName: 'Library',
+      gradientFrom: 'brand-blue-primary/40',
+      gradientVia: 'indigo-600/20',
+      gradientTo: 'transparent',
+      iconGradientFrom: 'brand-blue-primary',
+      iconGradientTo: 'indigo-600',
+    },
+    {
+      key: 'sugerencias',
+      title: 'Sugerencias Pendientes',
+      subtitle: 'Canciones esperando aprobación',
+      iconName: 'Clock',
+      gradientFrom: 'amber-500/30',
+      gradientVia: 'orange-600/10',
+      gradientTo: 'transparent',
+      iconGradientFrom: 'amber-500',
+      iconGradientTo: 'orange-600',
+    },
+    {
+      key: 'archivadas',
+      title: 'Archivo',
+      subtitle: 'Canciones que ya no tocamos',
+      iconName: 'Archive',
+      gradientFrom: 'gray-600/30',
+      gradientVia: 'gray-700/10',
+      gradientTo: 'transparent',
+      iconGradientFrom: 'gray-500',
+      iconGradientTo: 'gray-700',
+    },
+  ];
+
+  for (const section of defaultSections) {
+    await prisma.repertoireSection.upsert({
+      where: { key: section.key },
+      update: {},
+      create: section,
+    });
+  }
+
+  console.log('Default repertoire sections created/verified');
 }
 
 main()

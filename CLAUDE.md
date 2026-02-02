@@ -25,6 +25,7 @@ cd web && npm run dev
 cd api
 npx prisma migrate dev      # Apply migrations
 npx prisma migrate reset    # Reset database
+npx prisma db seed          # Seed SUPERADMIN + default sections
 npx prisma studio           # Visual database browser
 npx prisma db push          # Push schema without migration
 ```
@@ -52,16 +53,35 @@ cd web && npm run build     # Next.js build
 - **NestJS 11** with modular architecture
 - **Prisma ORM** for PostgreSQL (schema at `prisma/schema.prisma`)
 - **Azure AD** authentication via `passport-azure-ad` (BearerStrategy)
+- **class-validator** for DTO validation
 - Domain restricted to `@ce.pucmm.edu.do` emails
 
 Module structure:
 ```
 src/
-├── auth/          # Azure AD strategy & guards
-├── prisma/        # PrismaService wrapper
-├── songs/         # Songs CRUD (controller, service, DTOs)
-├── app.module.ts  # Root module with ConfigModule
-└── main.ts        # Bootstrap with CORS config
+├── auth/                    # Azure AD strategy & guards
+│   ├── azure-ad.strategy.ts # JWT validation + user upsert
+│   ├── azure-ad.guard.ts    # Auth guard
+│   ├── roles.guard.ts       # Role-based access control
+│   └── roles.decorator.ts   # @Roles() decorator
+├── prisma/                  # PrismaService wrapper
+├── songs/                   # Songs CRUD (controller, service, DTOs)
+├── users/                   # User management + profile updates
+│   ├── users.controller.ts  # GET /me, PATCH /me/profile, GET /, PATCH /:id/role
+│   ├── users.service.ts
+│   └── dto/
+│       └── update-profile.dto.ts
+├── uploads/                 # File upload system
+│   ├── uploads.controller.ts # POST /image, /pdf, /video, /asset
+│   ├── uploads.service.ts
+│   └── uploads.module.ts
+├── repertoire-sections/     # Customizable section headers
+│   ├── repertoire-sections.controller.ts
+│   ├── repertoire-sections.service.ts
+│   └── dto/
+│       └── update-section.dto.ts
+├── app.module.ts            # Root module with ConfigModule
+└── main.ts                  # Bootstrap with CORS + static files
 ```
 
 ### Frontend (`/web`)
@@ -69,26 +89,48 @@ src/
 - **React 19** with TanStack Query v5 for server state
 - **MSAL React** for Azure AD authentication
 - **Tailwind CSS 4** with custom design tokens
+- **focus-trap-react** for accessible modals
 
 Key patterns:
 ```
-app/                    # App Router pages
-components/             # React components
-hooks/use-songs.ts      # TanStack Query hooks (useSongs, useCreateSong, etc.)
-hooks/use-auth.ts       # Auth state hook
-lib/api.ts              # API client class with Bearer token
-lib/msal-config.ts      # Azure AD MSAL configuration
-providers/index.tsx     # MSAL + QueryClient providers wrapper
+app/                         # App Router pages
+├── songs/page.tsx           # Repertoire with dynamic section headers
+├── page.tsx                 # Dashboard home
+└── globals.css              # Design tokens
+components/
+├── ui/
+│   ├── Modal.tsx            # Compound modal component
+│   └── FileDropzone.tsx     # Drag-and-drop upload
+├── SongRow.tsx              # Playlist-style row
+├── StatusBadge.tsx          # Status indicator
+├── UserProfileModal.tsx     # Profile editing
+├── SectionSettingsModal.tsx # Section customization
+├── AdminUsersModal.tsx      # User management
+└── ...
+hooks/
+├── use-songs.ts             # TanStack Query for songs
+├── use-users.ts             # TanStack Query for users + useUpdateProfile
+├── use-sections.ts          # TanStack Query for repertoire sections
+├── use-upload.ts            # File upload with progress
+└── use-auth.ts              # Auth state + permission flags
+lib/
+├── api.ts                   # API client class with all methods
+├── msal-config.ts           # Azure AD MSAL configuration
+└── utils.ts                 # cn() utility for classnames
+providers/
+└── index.tsx                # MSAL + QueryClient providers
 ```
 
 ### Data Models (Prisma)
-- **User**: Roles (SUPERADMIN, SECTION_LEADER, MEMBER, ALUMNI_GUEST)
-- **Song**: Status (PENDING, REHEARSING, READY, ARCHIVED), includes BPM, key, ISRC. Can be linked to Events (planned) or Concerts (actually played).
+- **User**: Roles + profile data (avatarUrl, instruments[], phone, bio)
+- **Song**: Status (PENDING, REHEARSING, READY, ARCHIVED), BPM, key, ISRC
 - **SongVersion**: Arrangements (Studio, Live, Remix)
-- **Event**: Recurring event types (e.g., "Navidad", "Graduación"). Contains planned songs.
-- **Concert**: Specific performance dates within an Event. Records songs played and videos.
-- **Asset**: File attachments (scores on songs, videos on songs or concerts)
+- **Event**: Recurring event types (e.g., "Navidad", "Graduación")
+- **Concert**: Specific performance dates within an Event
+- **Asset**: File attachments (scores, videos, audio) linked to songs/concerts
 - **Tag**: Genre/category labels
+- **AuditLog**: Activity tracking
+- **RepertoireSection**: Customizable UI headers (title, subtitle, iconName, bannerUrl, gradients)
 
 ### Authentication Flow
 1. Frontend: MSAL acquires token from Azure AD
@@ -96,6 +138,24 @@ providers/index.tsx     # MSAL + QueryClient providers wrapper
 3. `api.ts` client attaches `Authorization: Bearer {token}`
 4. Backend: `AzureAdGuard` validates token with passport-azure-ad
 5. Domain validation ensures `@ce.pucmm.edu.do` only
+6. User is upserted in DB on first login
+
+### Permission System
+```typescript
+// Frontend (use-auth.ts)
+const {
+  canManageUsers,    // SUPERADMIN only
+  canManageSongs,    // SUPERADMIN or SECTION_LEADER
+  canSuggestSongs,   // SUPERADMIN, SECTION_LEADER, or MEMBER
+  canEditProfile,    // SUPERADMIN, SECTION_LEADER, or MEMBER (not ALUMNI_GUEST)
+  isAdmin            // SUPERADMIN or SECTION_LEADER
+} = useAuth();
+
+// Backend (roles.guard.ts)
+@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+@Patch(':key')
+updateSection() { ... }
+```
 
 ## Design System
 
@@ -105,7 +165,92 @@ Brand colors defined in `web/app/globals.css`:
 - `brand-red`: #D22630
 - Surface colors: `surface-0`, `surface-50`, `surface-100` (dark theme)
 
-Custom utilities: `text-display`, `text-h1`, `glass`, `animate-fade-in`, `scrollbar-hide`
+Custom utilities: `text-display`, `text-h1`, `glass`, `glass-strong`, `animate-fade-in`, `animate-shimmer`, `scrollbar-hide`, `transition-smooth`, `transition-bounce`
+
+### Tailwind CSS Notes
+- Use `bg-linear-to-b` and `bg-linear-to-br` (Tailwind 4 canonical syntax)
+- Avoid `bg-gradient-to-*` (older syntax, still works but linter warns)
+
+## Reusable Patterns
+
+### Modal Component (Compound Pattern)
+```tsx
+import { Modal } from "@/components/ui/Modal";
+
+<Modal isOpen={isOpen} onClose={onClose} size="lg">
+  <Modal.Header icon={<Icon />} subtitle="Subtitle">
+    Title
+  </Modal.Header>
+  <Modal.Body className="space-y-4">
+    {/* Content */}
+  </Modal.Body>
+  {/* Optional footer - not a compound component, use div directly */}
+  <div className="shrink-0 px-6 py-4 border-t border-white/5 bg-surface-100/30">
+    <button>Save</button>
+  </div>
+</Modal>
+```
+
+### File Upload with Progress
+```tsx
+import { FileDropzone } from "@/components/ui/FileDropzone";
+import { useUpload } from "@/hooks/use-upload";
+
+// Component approach
+<FileDropzone
+  type="image"  // "image" | "pdf" | "video"
+  label="Upload Image"
+  description="Max 15MB"
+  onUploadComplete={(response) => {
+    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    setImageUrl(fullUrl);
+  }}
+/>
+
+// Hook approach for custom UI
+const { upload, isUploading, progress, error } = useUpload("image");
+const response = await upload(file);
+```
+
+### TanStack Query Hooks
+```tsx
+// Fetching
+const { data: songs, isLoading, error } = useSongs();
+const { data: sections } = useSections();
+const { data: users } = useUsers();  // SUPERADMIN only
+
+// Mutations
+const createSong = useCreateSong();
+const updateProfile = useUpdateProfile();
+const updateSection = useUpdateSection();
+
+await createSong.mutateAsync({ title: "Song", artist: "Artist" });
+await updateProfile.mutateAsync({ name: "New Name", instruments: ["Piano"] });
+await updateSection.mutateAsync({ key: "repertorio", data: { title: "New Title" } });
+```
+
+### API Client
+```typescript
+import { api } from "@/lib/api";
+
+// All methods return typed responses
+const songs = await api.getSongs();
+const user = await api.getMe();
+const sections = await api.getSections();
+
+// Upload with progress callback
+const response = await api.uploadImage(file, (progress) => {
+  console.log(`${progress}% uploaded`);
+});
+```
+
+## File Upload Limits
+
+| Type | Max Size | Formats | Storage Path |
+|------|----------|---------|--------------|
+| Image | 15 MB | JPEG, PNG, WebP, GIF | `/uploads/images/` |
+| PDF | 150 MB | PDF | `/uploads/scores/` |
+| Video | 1.5 GB | MP4, WebM, MOV, AVI | `/uploads/videos/` |
 
 ## Environment Variables
 
@@ -129,3 +274,54 @@ NEXT_PUBLIC_AZURE_AD_CLIENT_ID=
 - PostgreSQL: 5433 (mapped to container 5432)
 - API: 3001
 - Web: 3000
+
+## Common Implementation Patterns
+
+### Adding a New Backend Module
+1. Create folder: `src/module-name/`
+2. Create files: `module-name.module.ts`, `module-name.controller.ts`, `module-name.service.ts`
+3. Create DTOs in `dto/` subfolder with class-validator decorators
+4. Add module to `app.module.ts` imports
+5. Run `npm run build` to verify
+
+### Adding a New Frontend Hook
+1. Create hook in `hooks/use-feature.ts`
+2. Use TanStack Query patterns:
+   - `useQuery` for fetching
+   - `useMutation` for create/update/delete
+   - Update query cache in `onSuccess`
+3. Add types to `lib/api.ts`
+4. Add API methods to the `ApiClient` class
+
+### Protecting an Endpoint
+```typescript
+// Backend
+@UseGuards(AzureAdGuard)  // Requires authentication
+@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)  // Requires specific roles
+@Patch(':id')
+update(@Request() req) {
+  const user = req.user.dbUser;  // Access current user
+  // Check permissions...
+}
+```
+
+### Dynamic Tailwind Classes
+When using dynamic gradient/color classes from the database:
+```tsx
+// These work because Tailwind scans for static strings
+className={`bg-linear-to-br from-${gradientFrom} to-${gradientTo}`}
+
+// Make sure the values are valid Tailwind color classes
+// e.g., "brand-blue-primary", "indigo-600", "amber-500/30"
+```
+
+## Seed Data
+
+The `prisma/seed.ts` file creates:
+1. SUPERADMIN user (`jcjg0001@ce.pucmm.edu.do`)
+2. Default repertoire sections:
+   - `repertorio`: "Repertorio Activo" (Library icon, blue gradient)
+   - `sugerencias`: "Sugerencias Pendientes" (Clock icon, amber gradient)
+   - `archivadas`: "Archivo" (Archive icon, gray gradient)
+
+Run with: `npx prisma db seed`

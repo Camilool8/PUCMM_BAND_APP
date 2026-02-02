@@ -35,9 +35,11 @@ model User {
   id          String   @id @default(uuid())
   email       String   @unique
   name        String?
+  avatarUrl   String?  // Profile picture URL
   role        Role     @default(MEMBER)
   instruments String[]
   phone       String?
+  bio         String?  // Short user bio
   jobTitle    String?  // From Azure AD
   department  String?  // From Azure AD
   createdAt   DateTime @default(now())
@@ -163,4 +165,25 @@ model AuditLog {
   timestamp DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model RepertoireSection {
+  id              String   @id @default(uuid())
+  key             String   @unique  // "repertorio", "sugerencias", "archivadas"
+  title           String
+  subtitle        String?
+  iconName        String?  // Lucide icon name (e.g., "Library", "Clock", "Archive")
+  bannerUrl       String?  // Custom banner image URL
+  // Gradient colors for default/fallback styling
+  gradientFrom    String?  // e.g., "brand-blue-primary/40"
+  gradientVia     String?  // e.g., "indigo-600/20"
+  gradientTo      String?  // e.g., "transparent"
+  // Icon background gradient
+  iconGradientFrom String? // e.g., "brand-blue-primary"
+  iconGradientTo   String? // e.g., "indigo-600"
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("repertoire_sections")
 }

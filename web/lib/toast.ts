@@ -12,6 +12,14 @@ export const TOAST_MESSAGES = {
   // Users
   ROLE_UPDATED: "Rol actualizado exitosamente",
 
+  // Uploads
+  UPLOAD_SUCCESS: "Archivo subido exitosamente",
+  UPLOAD_ERROR: "Error al subir archivo",
+  ASSET_LINKED: "Archivo vinculado exitosamente",
+  ASSET_DELETED: "Archivo eliminado",
+  FILE_TOO_LARGE: "El archivo es muy grande",
+  FILE_TYPE_INVALID: "Tipo de archivo no permitido",
+
   // Errors
   ERROR_GENERIC: "Ocurrió un error. Intenta de nuevo.",
   ERROR_NETWORK: "Error de conexión. Verifica tu red.",

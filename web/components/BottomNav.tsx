@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, LogOut, Users } from "lucide-react";
+import { Home, Music, Users, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import AdminUsersModal from "./AdminUsersModal";
+import UserProfileModal from "./UserProfileModal";
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { logout, canManageUsers } = useAuth();
+  const { user, canManageUsers } = useAuth();
   const [showUsersModal, setShowUsersModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const NAV_ITEMS = [
     { href: "/", icon: Home, label: "Inicio" },
@@ -64,21 +66,32 @@ export default function BottomNav() {
             </button>
           )}
 
-          {/* Logout Button */}
+          {/* Profile Button with Avatar */}
           <button
-            onClick={logout}
+            onClick={() => setShowProfileModal(true)}
             className="flex flex-col items-center justify-center flex-1 h-full transition-smooth touch-active text-gray-400"
           >
-            <div className="p-2 rounded-xl">
-              <LogOut size={22} className="stroke-[1.5]" />
+            <div className="p-1">
+              {user?.avatarUrl ? (
+                <div className="w-7 h-7 rounded-full overflow-hidden border border-white/20">
+                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-linear-to-br from-brand-yellow to-amber-500 flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-brand-blue-primary">
+                    {user?.initials || <User size={14} />}
+                  </span>
+                </div>
+              )}
             </div>
-            <span className="text-[10px] font-medium mt-0.5">Salir</span>
+            <span className="text-[10px] font-medium mt-0.5">Perfil</span>
           </button>
         </div>
       </nav>
 
-      {/* Admin Users Modal */}
+      {/* Modals */}
       <AdminUsersModal isOpen={showUsersModal} onClose={() => setShowUsersModal(false)} />
+      <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </>
   );
 }

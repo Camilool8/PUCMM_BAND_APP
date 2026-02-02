@@ -3,14 +3,16 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, LogOut, Users, Shield } from "lucide-react";
+import { Home, Music, LogOut, Users, Shield, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import AdminUsersModal from "./AdminUsersModal";
+import UserProfileModal from "./UserProfileModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user, effectiveRole, canManageUsers, logout } = useAuth();
+  const { user, canManageUsers, logout } = useAuth();
   const [showUsersModal, setShowUsersModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   return (
     <>
@@ -92,9 +94,25 @@ export default function Sidebar() {
         {/* User Section */}
         {user && (
           <div className="p-4 border-t border-white/5 bg-linear-to-t from-brand-blue-primary/20 to-transparent">
-            <div className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/5 transition">
-              <div className="w-8 h-8 rounded-full bg-brand-yellow text-brand-blue-primary flex items-center justify-center font-bold text-sm">
-                {user.initials}
+            <button
+              onClick={() => setShowProfileModal(true)}
+              className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/5 transition group"
+            >
+              {/* Avatar */}
+              <div className="relative w-9 h-9 rounded-full overflow-hidden bg-brand-yellow text-brand-blue-primary flex items-center justify-center font-bold text-sm shrink-0">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user.initials
+                )}
+                {/* Edit indicator on hover */}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Settings size={14} className="text-white" />
+                </div>
               </div>
               <div className="text-left flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{user.name}</p>
@@ -103,20 +121,22 @@ export default function Sidebar() {
                   {user.displayRole}
                 </p>
               </div>
-              <button
-                onClick={logout}
-                className="p-1 hover:bg-white/10 rounded transition-colors"
-                title="Cerrar sesión"
-              >
-                <LogOut size={16} className="text-gray-500 hover:text-white" />
-              </button>
-            </div>
+            </button>
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 w-full mt-2 px-4 py-2 text-xs text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+            >
+              <LogOut size={14} />
+              Cerrar sesión
+            </button>
           </div>
         )}
       </aside>
 
-      {/* Admin Users Modal */}
+      {/* Modals */}
       <AdminUsersModal isOpen={showUsersModal} onClose={() => setShowUsersModal(false)} />
+      <UserProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </>
   );
 }
