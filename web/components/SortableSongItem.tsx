@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Music, Trash2, ChevronRight } from "lucide-react";
+import { CachedImage } from "@/components/ui/CachedImage";
 import type { Song } from "@/lib/api";
 
 interface SortableSongItemProps {
@@ -69,7 +70,12 @@ export default function SortableSongItem({
       {/* Cover */}
       <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
         {song.coverUrl ? (
-          <img src={song.coverUrl} alt="" className="w-full h-full object-cover" />
+          <CachedImage
+            src={song.coverUrl}
+            alt=""
+            className="w-full h-full"
+            fallback={<Music size={16} className="text-gray-500" />}
+          />
         ) : (
           <Music size={16} className="text-gray-500" />
         )}
@@ -83,12 +89,12 @@ export default function SortableSongItem({
         <p className="text-xs text-gray-500 truncate">{song.artist}</p>
       </div>
 
-      {/* Remove Button */}
+      {/* Remove Button - always visible on mobile, hover on desktop */}
       {canRemove && onRemove && (
         <button
           onClick={(e) => onRemove(song.id, e)}
           disabled={isRemoving}
-          className="opacity-0 group-hover:opacity-100 p-1.5 md:p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
+          className="md:opacity-0 md:group-hover:opacity-100 p-1.5 md:p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
         >
           <Trash2 size={14} />
         </button>

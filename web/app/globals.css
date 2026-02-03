@@ -192,3 +192,50 @@ body {
     opacity: 0.8;
   }
 }
+
+/* ============================================================================
+   Custom Tour System Styles
+   ============================================================================ */
+
+/* Tour Popover */
+.tour-popover {
+  background: #1a1f2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  max-width: 320px;
+  min-width: 280px;
+  overflow: hidden;
+}
+
+/* Tour Popover Animation */
+@keyframes tour-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tour-popover {
+  animation: tour-popover-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Spotlight Animation */
+@keyframes tour-spotlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(255, 210, 0, 0.15), 0 0 20px rgba(255, 210, 0, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 210, 0, 0.2), 0 0 30px rgba(255, 210, 0, 0.3);
+  }
+}
+
+.tour-spotlight-highlight {
+  animation: tour-spotlight-pulse 2s ease-in-out infinite;
+}

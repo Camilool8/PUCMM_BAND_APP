@@ -18,6 +18,10 @@ export class CreateSongDto {
 
   @IsOptional()
   @IsString()
+  genre?: string;
+
+  @IsOptional()
+  @IsString()
   isrc?: string;
 
   @IsOptional()

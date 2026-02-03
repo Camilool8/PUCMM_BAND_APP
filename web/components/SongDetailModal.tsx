@@ -24,15 +24,17 @@ import {
   Video,
   Plus,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import StatusBadge from "./StatusBadge";
 import { useAuth } from "@/hooks/use-auth";
-import { useUpdateSong, useDeleteSong } from "@/hooks/use-songs";
+import { useUpdateSong, useDeleteSong, useAddLeadVocal, useRemoveLeadVocal } from "@/hooks/use-songs";
+import { useUsers } from "@/hooks/use-users";
 import { useSongAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-upload";
 import { useResolveMusicLink } from "@/hooks/use-music-metadata";
 import { isMusicLink, formatDurationFromMs } from "@/hooks/use-music-metadata";
-import type { Song, SongStatus, Asset, UploadResponse } from "@/lib/api";
+import type { Song, SongStatus, Asset, UploadResponse, DbUser } from "@/lib/api";
 
 // Dynamic import to avoid SSR issues with react-pdf
 const PDFViewerModal = dynamic(() => import("./PDFViewerModal"), {
@@ -113,10 +115,14 @@ const STATUS_OPTIONS: {
 ];
 
 export default function SongDetailModal({ song, onClose }: SongDetailModalProps) {
+  const router = useRouter();
   const { canManageSongs } = useAuth();
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
+  const addLeadVocal = useAddLeadVocal();
+  const removeLeadVocal = useRemoveLeadVocal();
   const { data: assets = [], refetch: refetchAssets } = useSongAssets(song?.id || "");
+  const { data: allUsers = [] } = useUsers();
   const createAsset = useCreateAsset();
   const deleteAsset = useDeleteAsset();
   const resolveMusicLink = useResolveMusicLink();
@@ -141,6 +147,9 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
   // Video viewer state
   const [selectedVideo, setSelectedVideo] = useState<Asset | null>(null);
+
+  // Lead vocal selector state
+  const [showLeadVocalSelector, setShowLeadVocalSelector] = useState(false);
 
   // Asset upload state
   const [uploadingAssetName, setUploadingAssetName] = useState("");
@@ -174,6 +183,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
       setSelectedVideo(null);
       setActiveTab("info");
       setLinkToResolve("");
+      setShowLeadVocalSelector(false);
     }
   }, [song]);
 
@@ -253,6 +263,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
     setIsEditing(false);
     setSelectedPdf(null);
     setSelectedVideo(null);
+    setShowLeadVocalSelector(false);
     onClose();
   };
 
@@ -293,9 +304,9 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
   return (
     <>
-      <Modal isOpen={!!song} onClose={handleClose} size="lg" showCloseButton={false}>
+      <Modal isOpen={!!song} onClose={handleClose} size="lg" showCloseButton={false} data-tour="modal-content">
         {/* Custom Header with Cover Art */}
-        <div className="relative h-44 md:h-52 bg-linear-to-b from-brand-blue-primary/60 via-brand-blue-primary/30 to-transparent shrink-0">
+        <div data-tour="song-detail-header" className="relative h-44 md:h-52 bg-linear-to-b from-brand-blue-primary/60 via-brand-blue-primary/30 to-transparent shrink-0">
           {/* Background blur effect */}
           {(editCoverUrl || song.coverUrl) && (
             <div
@@ -490,7 +501,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
         {/* Music Platform Links - Always visible when not editing */}
         {!isEditing && hasMusicLinks && (
-          <div className="px-6 py-3 border-b border-white/5">
+          <div data-tour="song-platform-links" className="px-6 py-3 border-b border-white/5">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 mr-2">Escuchar en:</span>
               {song.spotifyUrl && (
@@ -526,7 +537,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
         {/* Tabs */}
         {!isEditing && (
-          <div className="flex gap-1 px-6 pt-4 border-b border-white/5">
+          <div data-tour="song-tabs" className="flex gap-1 px-6 pt-4 border-b border-white/5">
             <button
               onClick={() => setActiveTab("info")}
               className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all ${
@@ -538,6 +549,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
               Info
             </button>
             <button
+              data-tour="song-tab-scores"
               onClick={() => setActiveTab("scores")}
               className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all flex items-center gap-2 ${
                 activeTab === "scores"
@@ -553,6 +565,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
               )}
             </button>
             <button
+              data-tour="song-tab-media"
               onClick={() => setActiveTab("media")}
               className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-all flex items-center gap-2 ${
                 activeTab === "media"
@@ -620,13 +633,94 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
               {/* Lead Vocals */}
               <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30">
-                <h3 className="flex items-center gap-2 text-white font-semibold mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
-                    <Mic2 size={16} className="text-brand-yellow" />
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="flex items-center gap-2 text-white font-semibold">
+                    <div className="w-8 h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
+                      <Mic2 size={16} className="text-brand-yellow" />
+                    </div>
+                    Voces Principales
+                  </h3>
+                  {canManageSongs && (
+                    <button
+                      onClick={() => setShowLeadVocalSelector(!showLeadVocalSelector)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Current lead vocals */}
+                {song.leadVocals && song.leadVocals.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {song.leadVocals.map((vocalist) => (
+                      <div
+                        key={vocalist.id}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-yellow/10 border border-brand-yellow/20"
+                      >
+                        <div className="w-6 h-6 rounded-full overflow-hidden bg-surface-200 shrink-0">
+                          {vocalist.avatarUrl ? (
+                            <img src={vocalist.avatarUrl} alt={vocalist.name || ""} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <User size={12} className="text-gray-500" />
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-sm text-brand-yellow font-medium">{vocalist.name || "Usuario"}</span>
+                        {canManageSongs && (
+                          <button
+                            onClick={() => removeLeadVocal.mutate({ songId: song.id, userId: vocalist.id })}
+                            disabled={removeLeadVocal.isPending}
+                            className="p-0.5 rounded-full text-brand-yellow/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  Voces Principales
-                </h3>
-                <p className="text-sm text-gray-500 italic">No asignado</p>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">No asignado</p>
+                )}
+
+                {/* Lead vocal selector dropdown */}
+                {showLeadVocalSelector && canManageSongs && (
+                  <div className="mt-3 p-2 rounded-xl bg-surface-200/50 border border-surface-200 max-h-48 overflow-y-auto">
+                    {allUsers
+                      .filter((u: DbUser) => !song.leadVocals?.some((lv) => lv.id === u.id))
+                      .map((user: DbUser) => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            addLeadVocal.mutate({ songId: song.id, userId: user.id });
+                            setShowLeadVocalSelector(false);
+                          }}
+                          disabled={addLeadVocal.isPending}
+                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all text-left"
+                        >
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-100 shrink-0">
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt={user.name || ""} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <User size={14} className="text-gray-500" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-white truncate">{user.name || user.email}</p>
+                            {user.instruments && user.instruments.length > 0 && (
+                              <p className="text-xs text-gray-500 truncate">{user.instruments.join(", ")}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    {allUsers.filter((u: DbUser) => !song.leadVocals?.some((lv) => lv.id === u.id)).length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-2">No hay usuarios disponibles</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Events */}
@@ -637,7 +731,37 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                   </div>
                   Eventos
                 </h3>
-                <p className="text-sm text-gray-500 italic">Esta cancion no esta asignada a ningun evento</p>
+                {song.eventSongs && song.eventSongs.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {song.eventSongs.map((es) => (
+                      <button
+                        key={es.event.id}
+                        onClick={() => {
+                          handleClose();
+                          router.push(`/events?event=${es.event.id}`);
+                        }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-200/50 hover:bg-white/10 border border-surface-200 transition-all group"
+                      >
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{
+                            background: es.event.iconGradientFrom
+                              ? `linear-gradient(to bottom right, ${es.event.iconGradientFrom}, ${es.event.gradientFrom || es.event.iconGradientFrom})`
+                              : "rgba(59, 130, 246, 0.2)",
+                          }}
+                        >
+                          <Calendar size={14} className="text-white" />
+                        </div>
+                        <span className="text-sm text-white font-medium group-hover:text-brand-yellow transition-colors">
+                          {es.event.name}
+                        </span>
+                        <ExternalLink size={12} className="text-gray-500 group-hover:text-brand-yellow transition-colors" />
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">Esta cancion no esta asignada a ningun evento</p>
+                )}
               </div>
 
               {/* Admin Actions */}

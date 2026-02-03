@@ -157,7 +157,7 @@ export default function EventsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Dynamic Hero Header */}
-      <header className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
+      <header data-tour="events-header" className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
         {/* Banner background */}
         {bannerUrl && (
           <>
@@ -226,7 +226,7 @@ export default function EventsPage() {
       </header>
 
       {/* Tabs - scrollable on mobile */}
-      <div className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
+      <div data-tour="event-tabs" className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
         {/* "Todos" tab */}
         <button
           onClick={() => setActiveTab("todos")}
@@ -242,7 +242,7 @@ export default function EventsPage() {
         </button>
 
         {/* Dynamic event tabs */}
-        {events?.map((event) => {
+        {events?.map((event, index) => {
           const IconComponent = event.iconName ? ICON_MAP[event.iconName] : Calendar;
           const Icon = IconComponent || Calendar;
           const isActive = activeTab === event.id;
@@ -251,6 +251,7 @@ export default function EventsPage() {
           return (
             <button
               key={event.id}
+              data-tour={index === 0 ? "event-tab-first" : undefined}
               onClick={() => setActiveTab(event.id)}
               className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
                 isActive
@@ -284,6 +285,7 @@ export default function EventsPage() {
             {/* Admin: Show "Nuevo Evento" button */}
             {canManageEvents && (
               <button
+                data-tour="create-event-btn"
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-1.5 md:gap-2 bg-brand-yellow text-brand-blue-primary px-3 md:px-4 py-2 md:py-2.5 rounded-full text-sm font-bold shadow-lg transition-bounce hover:scale-105 active:scale-95"
               >

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket } from "lucide-react";
+import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
@@ -16,7 +16,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 h-full w-64 bg-black/40 border-r border-white/5 flex-col z-40 hidden md:flex">
+      <aside data-tour="sidebar" className="fixed left-0 top-0 h-full w-64 bg-black/40 border-r border-white/5 flex-col z-40 hidden md:flex">
         {/* Logo */}
         <div className="p-6">
           <h1 className="text-2xl font-bold tracking-tighter flex items-center gap-2">
@@ -34,6 +34,7 @@ export default function Sidebar() {
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           <Link
             href="/"
+            data-tour="nav-home"
             className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
               pathname === "/"
                 ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
@@ -45,6 +46,7 @@ export default function Sidebar() {
           </Link>
           <Link
             href="/songs"
+            data-tour="nav-songs"
             className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
               pathname === "/songs"
                 ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
@@ -56,6 +58,7 @@ export default function Sidebar() {
           </Link>
           <Link
             href="/events"
+            data-tour="nav-events"
             className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
               pathname === "/events"
                 ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
@@ -67,6 +70,7 @@ export default function Sidebar() {
           </Link>
           <Link
             href="/concerts"
+            data-tour="nav-concerts"
             className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
               pathname === "/concerts"
                 ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
@@ -75,6 +79,18 @@ export default function Sidebar() {
           >
             <Ticket size={20} />
             Conciertos
+          </Link>
+          <Link
+            href="/guides"
+            data-tour="nav-guides"
+            className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+              pathname === "/guides"
+                ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <BookOpen size={20} />
+            Guias
           </Link>
 
           {/* Admin Section */}
@@ -86,6 +102,7 @@ export default function Sidebar() {
               </h3>
               <button
                 onClick={() => setShowUsersModal(true)}
+                data-tour="nav-users"
                 className="flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
               >
                 <Users size={20} />
@@ -93,26 +110,11 @@ export default function Sidebar() {
               </button>
             </div>
           )}
-
-          {/* Coming Soon Section */}
-          <div className="pt-6">
-            <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 px-4">
-              Próximamente
-            </h3>
-            <div className="space-y-1 px-4">
-              <p className="text-xs text-gray-600 flex items-center gap-2">
-                <span>🎵</span> Géneros
-              </p>
-              <p className="text-xs text-gray-600 flex items-center gap-2">
-                <span>📸</span> Galería
-              </p>
-            </div>
-          </div>
         </nav>
 
         {/* User Section */}
         {user && (
-          <div className="p-4 border-t border-white/5 bg-linear-to-t from-brand-blue-primary/20 to-transparent">
+          <div data-tour="user-menu" className="p-4 border-t border-white/5 bg-linear-to-t from-brand-blue-primary/20 to-transparent">
             <button
               onClick={() => setShowProfileModal(true)}
               className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-white/5 transition group"

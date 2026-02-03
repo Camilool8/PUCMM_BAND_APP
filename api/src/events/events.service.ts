@@ -7,6 +7,30 @@ import { UpdateEventDto } from './dto/update-event.dto';
 export class EventsService {
   constructor(private prisma: PrismaService) {}
 
+  // Common include for song with all relations
+  private readonly songInclude = {
+    song: {
+      include: {
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+        leadVocals: {
+          select: { id: true, name: true, avatarUrl: true, instruments: true },
+        },
+        eventSongs: {
+          include: {
+            event: {
+              select: { id: true, name: true, iconName: true, gradientFrom: true, iconGradientFrom: true },
+            },
+          },
+        },
+        _count: {
+          select: { votes: true },
+        },
+      },
+    },
+  };
+
   // Transform event to include songs array from eventSongs junction
   private transformEvent(event: any) {
     if (!event) return event;
@@ -37,7 +61,7 @@ export class EventsService {
       },
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         concerts: true,
@@ -79,7 +103,7 @@ export class EventsService {
       where: { id },
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         concerts: {
@@ -121,7 +145,7 @@ export class EventsService {
       data: eventData,
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         concerts: true,
@@ -173,7 +197,7 @@ export class EventsService {
       where: { id: eventId },
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -201,7 +225,7 @@ export class EventsService {
       where: { id: eventId },
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -234,7 +258,7 @@ export class EventsService {
       where: { id: eventId },
       include: {
         eventSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         concerts: true,

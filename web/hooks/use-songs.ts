@@ -75,3 +75,95 @@ export function useDeleteSong() {
     },
   });
 }
+
+// ============================================================================
+// Voting
+// ============================================================================
+
+export function useMyVotes() {
+  return useQuery({
+    queryKey: ["my-votes"],
+    queryFn: () => api.getMyVotes(),
+  });
+}
+
+export function useVoteSong() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (songId: string) => api.voteSong(songId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-votes"] });
+      toast.success("Voto registrado");
+    },
+    onError: () => {
+      toast.error("No se pudo votar");
+    },
+  });
+}
+
+export function useUnvoteSong() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (songId: string) => api.unvoteSong(songId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-votes"] });
+      toast.success("Voto eliminado");
+    },
+    onError: () => {
+      toast.error("No se pudo eliminar el voto");
+    },
+  });
+}
+
+// ============================================================================
+// Lead Vocals
+// ============================================================================
+
+export function useAddLeadVocal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ songId, userId }: { songId: string; userId: string }) =>
+      api.addLeadVocal(songId, userId),
+    onSuccess: (_, { songId }) => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["songs", songId] });
+      toast.success("Voz principal asignada");
+    },
+    onError: () => {
+      toast.error("No se pudo asignar la voz");
+    },
+  });
+}
+
+export function useRemoveLeadVocal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ songId, userId }: { songId: string; userId: string }) =>
+      api.removeLeadVocal(songId, userId),
+    onSuccess: (_, { songId }) => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["songs", songId] });
+      toast.success("Voz principal removida");
+    },
+    onError: () => {
+      toast.error("No se pudo remover la voz");
+    },
+  });
+}
+
+// ============================================================================
+// Duplicate Detection
+// ============================================================================
+
+export function useCheckDuplicate() {
+  return useMutation({
+    mutationFn: ({ title, artist, isrc }: { title: string; artist: string; isrc?: string }) =>
+      api.checkDuplicate(title, artist, isrc),
+  });
+}

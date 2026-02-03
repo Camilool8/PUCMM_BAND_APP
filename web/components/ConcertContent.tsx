@@ -22,7 +22,6 @@ import {
   Music,
   Plus,
   X,
-  MapPin,
   FileText,
   Pencil,
   ArrowLeft,
@@ -32,6 +31,7 @@ import {
   Video,
   Upload,
   Trash2,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useConcert, useDeleteConcert, useAddSongToConcert, useRemoveSongFromConcert, useCopyEventSongsToConcert, useReorderConcertSongs } from "@/hooks/use-concerts";
@@ -66,6 +66,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   const deleteAsset = useDeleteAsset();
 
   const [showAddSong, setShowAddSong] = useState(false);
+  const [songSearchQuery, setSongSearchQuery] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -79,13 +80,28 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   // Get event songs count for reference
   const eventSongsCount = displayConcert.event?.songs?.length || displayConcert.event?._count?.songs || 0;
 
-  // Filter out songs already in the concert
+
+  // Filter out songs already in the concert and apply search
   const availableSongs = allSongs?.filter(
-    (song) => !concertSongs.some((cs) => cs.id === song.id)
+    (song) => {
+      // Filter out songs already in concert
+      if (concertSongs.some((cs) => cs.id === song.id)) return false;
+
+      // Apply search filter
+      if (songSearchQuery) {
+        const query = songSearchQuery.toLowerCase();
+        return (
+          song.title.toLowerCase().includes(query) ||
+          song.artist.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    }
   ) || [];
 
   const handleAddSong = async (songId: string) => {
     await addSongToConcert.mutateAsync({ concertId: concert.id, songId });
+    setSongSearchQuery("");
     setShowAddSong(false);
   };
 
@@ -151,103 +167,55 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Back Button */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors -mt-2"
-      >
-        <ArrowLeft size={18} />
-        <span className="text-sm">Volver a conciertos</span>
-      </button>
+    <div className="space-y-4 md:space-y-6 animate-fade-in">
+      {/* Action Bar: Back + Edit */}
+      <div className="flex items-center justify-between -mt-2">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft size={18} />
+          <span className="text-sm">Volver</span>
+        </button>
 
-      {/* Concert Info Card */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex items-start gap-4">
-            {/* Date Badge */}
-            <div
-              className={`w-14 h-14 md:w-16 md:h-16 rounded-xl flex flex-col items-center justify-center shrink-0 ${
-                isUpcoming ? "bg-brand-blue-primary" : "bg-gray-600"
-              }`}
-            >
-              <span className="text-[10px] md:text-xs text-white/70 uppercase">
-                {concertDate.toLocaleDateString("es-DO", { month: "short" })}
-              </span>
-              <span className="text-xl md:text-2xl font-bold text-white leading-none">
-                {concertDate.getDate()}
-              </span>
-            </div>
+        {canManageEvents && (
+          <button
+            onClick={() => setShowEditModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all text-sm"
+          >
+            <Pencil size={14} />
+            <span>Editar</span>
+          </button>
+        )}
+      </div>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h2 className="text-lg md:text-xl font-bold text-white capitalize">
-                  {concertDate.toLocaleDateString("es-DO", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </h2>
-                {isUpcoming && (
-                  <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500 text-white uppercase font-medium">
-                    Próximo
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-400 text-sm md:text-base">
-                {concertDate.toLocaleTimeString("es-DO", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
-            </div>
-          </div>
-
-          {/* Edit Button */}
-          {canManageEvents && (
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="p-2 md:p-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-            >
-              <Pencil size={18} />
-            </button>
-          )}
-        </div>
-
-        {/* Location & Event */}
-        <div className="space-y-2">
-          {displayConcert.location && (
-            <div className="flex items-center gap-2 text-gray-300">
-              <MapPin size={16} className="text-gray-500 shrink-0" />
-              <span className="text-sm md:text-base">{displayConcert.location}</span>
-            </div>
-          )}
+      {/* Concert Details Card - only extra info not in header */}
+      {(displayConcert.notes || displayConcert.event) && (
+        <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30 space-y-3">
+          {/* Link to Event */}
           {displayConcert.event && (
             <Link
               href={`/events`}
               className="flex items-center gap-2 text-gray-400 hover:text-brand-yellow transition-colors group"
             >
               <Calendar size={16} className="text-gray-500 group-hover:text-brand-yellow shrink-0" />
-              <span className="text-sm">{displayConcert.event.name}</span>
+              <span className="text-sm">Ver evento: {displayConcert.event.name}</span>
               <ExternalLink size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
           )}
-        </div>
 
-        {/* Notes */}
-        {displayConcert.notes && (
-          <div className="mt-4 p-3 rounded-xl bg-surface-100/50 border border-surface-200/30">
-            <div className="flex items-start gap-2">
+          {/* Notes */}
+          {displayConcert.notes && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-surface-100/50 border border-surface-200/30">
               <FileText size={14} className="text-gray-500 mt-0.5 shrink-0" />
               <p className="text-sm text-gray-300">{displayConcert.notes}</p>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4">
+      <div className={`grid gap-2 md:gap-4 ${eventSongsCount > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
           <div className="text-xl md:text-3xl font-bold text-white">{concertSongs.length}</div>
           <div className="text-[10px] md:text-sm text-gray-400 mt-1">Canciones</div>
@@ -259,20 +227,27 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
           </div>
           <div className="text-[10px] md:text-sm text-gray-400 mt-1">Duración</div>
         </div>
-        <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
-          <div className="text-xl md:text-3xl font-bold text-white">{eventSongsCount}</div>
-          <div className="text-[10px] md:text-sm text-gray-400 mt-1">Del evento</div>
-        </div>
+        {eventSongsCount > 0 && (
+          <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
+            <div className="text-xl md:text-3xl font-bold text-white">{eventSongsCount}</div>
+            <div className="text-[10px] md:text-sm text-gray-400 mt-1">En el evento</div>
+          </div>
+        )}
       </div>
 
       {/* Setlist Section */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="flex items-center gap-2 text-white font-semibold text-lg">
-            <div className="w-8 h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
-              <Music size={16} className="text-brand-yellow" />
+      <div data-tour="concert-setlist" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
+              <Music size={14} className="text-brand-yellow sm:w-4 sm:h-4" />
             </div>
             Setlist
+            {concertSongs.length > 0 && (
+              <span className="text-[10px] sm:text-xs text-gray-500 font-normal ml-1">
+                ({concertSongs.length} {concertSongs.length === 1 ? "canción" : "canciones"})
+              </span>
+            )}
           </h3>
           {canManageEvents && !showAddSong && (
             <div className="flex items-center gap-2">
@@ -280,35 +255,60 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                 <button
                   onClick={handleCopyFromEvent}
                   disabled={copySongsFromEvent.isPending}
-                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-white/5 disabled:opacity-50"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-50"
                 >
                   <Copy size={14} />
-                  <span className="hidden sm:inline">Copiar del evento</span>
+                  <span>Copiar</span>
                 </button>
               )}
               <button
                 onClick={() => setShowAddSong(true)}
-                className="flex items-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-brand-yellow/10"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-2 rounded-lg hover:bg-brand-yellow/10"
               >
                 <Plus size={16} />
-                Agregar
+                <span>Agregar</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Add Song Selector */}
+        {/* Add Song Selector with Search */}
         {showAddSong && (
-          <div className="mb-4 p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mb-4 p-3 sm:p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Seleccionar canción:</span>
+              <span className="text-sm text-gray-400">Agregar canción:</span>
               <button
-                onClick={() => setShowAddSong(false)}
+                onClick={() => {
+                  setSongSearchQuery("");
+                  setShowAddSong(false);
+                }}
                 className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
               >
                 <X size={16} />
               </button>
             </div>
+
+            {/* Search Input */}
+            <div className="relative mb-3">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                value={songSearchQuery}
+                onChange={(e) => setSongSearchQuery(e.target.value)}
+                placeholder="Buscar canción o artista..."
+                className="w-full bg-surface-100 border border-surface-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/20 outline-none transition-all"
+                autoFocus
+              />
+              {songSearchQuery && (
+                <button
+                  onClick={() => setSongSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
             {availableSongs.length > 0 ? (
               <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-hide">
                 {availableSongs.map((song) => (
@@ -316,13 +316,13 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                     key={song.id}
                     onClick={() => handleAddSong(song.id)}
                     disabled={addSongToConcert.isPending}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/5 text-left transition-all disabled:opacity-50"
+                    className="w-full flex items-center gap-3 p-2 sm:p-2.5 rounded-lg hover:bg-white/5 active:bg-white/10 text-left transition-all disabled:opacity-50"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
                       {song.coverUrl ? (
                         <img src={song.coverUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Music size={16} className="text-gray-500" />
+                        <Music size={14} className="text-gray-500 sm:w-4 sm:h-4" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -334,7 +334,9 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 text-center py-6">No hay canciones disponibles para agregar</p>
+              <p className="text-sm text-gray-500 text-center py-6">
+                {songSearchQuery ? "No se encontraron canciones" : "No hay canciones disponibles"}
+              </p>
             )}
           </div>
         )}
@@ -386,26 +388,28 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
       </div>
 
       {/* Media Gallery Section */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="flex items-center gap-2 text-white font-semibold text-lg">
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-              <Video size={16} className="text-purple-400" />
+      <div data-tour="concert-media" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+              <Video size={14} className="text-purple-400 sm:w-4 sm:h-4" />
             </div>
-            Media del Concierto
+            <span className="hidden xs:inline">Media del Concierto</span>
+            <span className="xs:hidden">Media</span>
             {assets.length > 0 && (
-              <span className="text-xs text-gray-500 font-normal ml-2">
-                ({assets.length} {assets.length === 1 ? "archivo" : "archivos"})
+              <span className="text-[10px] sm:text-xs text-gray-500 font-normal ml-1">
+                ({assets.length})
               </span>
             )}
           </h3>
           {canManageEvents && !showUploadMedia && (
             <button
+              data-tour="concert-upload-btn"
               onClick={() => setShowUploadMedia(true)}
-              className="flex items-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-purple-500/10"
+              className="flex items-center justify-center gap-1.5 text-sm text-purple-400 hover:text-purple-300 transition-colors px-3 py-2 rounded-lg hover:bg-purple-500/10 w-full sm:w-auto"
             >
               <Upload size={16} />
-              Subir
+              <span>Subir media</span>
             </button>
           )}
         </div>
@@ -452,21 +456,21 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
       {canManageEvents && (
         <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30">
           {showDeleteConfirm ? (
-            <div className="flex items-center justify-between bg-red-500/10 p-4 rounded-xl border border-red-500/30 animate-in fade-in duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-500/10 p-4 rounded-xl border border-red-500/30 animate-in fade-in duration-200">
               <p className="text-sm text-red-400">¿Eliminar este concierto?</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
+                  className="flex-1 sm:flex-none px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleteConcert.isPending}
-                  className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50"
                 >
-                  {deleteConcert.isPending ? "Eliminando..." : "Sí, eliminar"}
+                  {deleteConcert.isPending ? "Eliminando..." : "Eliminar"}
                 </button>
               </div>
             </div>

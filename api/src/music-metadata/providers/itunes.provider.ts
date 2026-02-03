@@ -97,6 +97,7 @@ export class ITunesProvider {
       durationMs: track.trackTimeMillis,
       releaseDate: track.releaseDate,
       previewUrl: track.previewUrl,
+      genre: track.primaryGenreName,
       // iTunes doesn't provide BPM or key - will use ReccoBeats if we have Spotify ID
       bpm: undefined,
       key: undefined,

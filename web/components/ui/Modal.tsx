@@ -46,6 +46,7 @@ interface ModalProps {
   showCloseButton?: boolean;
   closeOnEscape?: boolean;
   closeOnBackdrop?: boolean;
+  "data-tour"?: string;
 }
 
 interface ModalHeaderProps {
@@ -123,6 +124,7 @@ function Modal({
   showCloseButton = true,
   closeOnEscape = true,
   closeOnBackdrop = true,
+  "data-tour": dataTour,
 }: ModalProps) {
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
@@ -186,7 +188,7 @@ function Modal({
       >
         <div
           className={cn(
-            "fixed inset-0 z-9999 flex items-center justify-center p-4",
+            "fixed inset-0 z-9999 flex items-end md:items-center justify-center p-0 md:p-4",
             "transition-opacity duration-200 ease-out",
             isAnimating ? "opacity-100" : "opacity-0",
           )}
@@ -208,6 +210,7 @@ function Modal({
             role="dialog"
             aria-modal="true"
             data-modal-container
+            data-tour={dataTour}
             tabIndex={-1}
             className={cn(
               // Base styles
@@ -216,15 +219,16 @@ function Modal({
               // Visual styles
               "bg-surface-50/95 backdrop-blur-2xl",
               "border border-white/10",
-              "rounded-2xl md:rounded-3xl",
+              // Mobile: sheet from bottom, Desktop: centered modal
+              "rounded-t-2xl md:rounded-3xl",
               "shadow-2xl shadow-black/50",
-              // Animation
+              // Animation - slide up on mobile, scale on desktop
               "transition-all duration-300 ease-out",
               isAnimating
-                ? "opacity-100 scale-100 translate-y-0"
-                : "opacity-0 scale-95 translate-y-3",
-              // Layout
-              "max-h-[90vh] flex flex-col overflow-hidden",
+                ? "opacity-100 translate-y-0 md:scale-100"
+                : "opacity-0 translate-y-full md:translate-y-0 md:scale-95",
+              // Layout - full height on mobile (minus safe area), max-h on desktop
+              "max-h-[95dvh] md:max-h-[90vh] flex flex-col overflow-hidden",
               className,
             )}
             onClick={(e) => e.stopPropagation()}

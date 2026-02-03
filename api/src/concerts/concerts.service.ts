@@ -7,6 +7,44 @@ import { UpdateConcertDto } from './dto/update-concert.dto';
 export class ConcertsService {
   constructor(private prisma: PrismaService) {}
 
+  // Common event select including visual properties and songs count
+  private readonly eventSelect = {
+    id: true,
+    name: true,
+    iconName: true,
+    bannerUrl: true,
+    gradientFrom: true,
+    gradientVia: true,
+    gradientTo: true,
+    iconGradientFrom: true,
+    iconGradientTo: true,
+    _count: { select: { eventSongs: true } },
+  };
+
+  // Common include for song with all relations
+  private readonly songInclude = {
+    song: {
+      include: {
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+        leadVocals: {
+          select: { id: true, name: true, avatarUrl: true, instruments: true },
+        },
+        eventSongs: {
+          include: {
+            event: {
+              select: { id: true, name: true, iconName: true, gradientFrom: true, iconGradientFrom: true },
+            },
+          },
+        },
+        _count: {
+          select: { votes: true },
+        },
+      },
+    },
+  };
+
   // Transform Prisma response to use 'songs' instead of 'concertSongs' for frontend consistency
   private transformConcert(concert: any) {
     if (!concert) return concert;
@@ -47,11 +85,9 @@ export class ConcertsService {
           : undefined,
       },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -66,11 +102,9 @@ export class ConcertsService {
   async findAll() {
     const concerts = await this.prisma.concert.findMany({
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -87,8 +121,9 @@ export class ConcertsService {
     const concerts = await this.prisma.concert.findMany({
       where: { eventId },
       include: {
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -105,11 +140,9 @@ export class ConcertsService {
     const concert = await this.prisma.concert.findUnique({
       where: { id },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         assets: true,
@@ -154,11 +187,9 @@ export class ConcertsService {
         date: date ? new Date(date) : undefined,
       },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -213,11 +244,9 @@ export class ConcertsService {
     const concert = await this.prisma.concert.findUnique({
       where: { id: concertId },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -249,11 +278,9 @@ export class ConcertsService {
     const concert = await this.prisma.concert.findUnique({
       where: { id: concertId },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -296,11 +323,9 @@ export class ConcertsService {
     const concert = await this.prisma.concert.findUnique({
       where: { id: concertId },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {
@@ -337,11 +362,9 @@ export class ConcertsService {
     const concert = await this.prisma.concert.findUnique({
       where: { id: concertId },
       include: {
-        event: {
-          select: { id: true, name: true },
-        },
+        event: { select: this.eventSelect },
         concertSongs: {
-          include: { song: true },
+          include: this.songInclude,
           orderBy: { order: 'asc' },
         },
         _count: {

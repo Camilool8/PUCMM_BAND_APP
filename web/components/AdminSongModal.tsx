@@ -70,6 +70,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
   const [artist, setArtist] = useState("");
   const [bpm, setBpm] = useState("");
   const [key, setKey] = useState("");
+  const [genre, setGenre] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [durationMs, setDurationMs] = useState<number | undefined>();
   const [releaseDate, setReleaseDate] = useState("");
@@ -96,6 +97,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
               setArtist(meta.artist);
               if (meta.bpm) setBpm(meta.bpm.toString());
               if (meta.key) setKey(meta.key);
+              if (meta.genre) setGenre(meta.genre);
               if (meta.coverUrl) setCoverUrl(meta.coverUrl);
               if (meta.durationMs) setDurationMs(meta.durationMs);
               if (meta.releaseDate) setReleaseDate(meta.releaseDate);
@@ -125,6 +127,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
       artist,
       bpm: bpm ? parseInt(bpm) : undefined,
       key: key || undefined,
+      genre: genre || undefined,
       coverUrl: coverUrl || undefined,
       durationMs: durationMs || undefined,
       releaseDate: releaseDate || undefined,
@@ -146,6 +149,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
     setArtist("");
     setBpm("");
     setKey("");
+    setGenre("");
     setCoverUrl("");
     setDurationMs(undefined);
     setReleaseDate("");
@@ -168,6 +172,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
     setArtist("");
     setBpm("");
     setKey("");
+    setGenre("");
     setCoverUrl("");
     setDurationMs(undefined);
     setReleaseDate("");
@@ -180,7 +185,7 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">
-      <form onSubmit={handleSubmit} className="flex flex-col">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <Modal.Header
           icon={<Music size={24} />}
           subtitle="Agregar una cancion al repertorio"
@@ -272,6 +277,11 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
                       <h4 className="font-bold text-white truncate">{title}</h4>
                       <p className="text-sm text-gray-400 truncate">{artist}</p>
                       <div className="flex flex-wrap gap-2 mt-2">
+                        {genre && (
+                          <span className="text-xs px-2 py-0.5 bg-purple-500/30 text-purple-300 rounded-full">
+                            {genre}
+                          </span>
+                        )}
                         {bpm && (
                           <span className="text-xs px-2 py-0.5 bg-brand-blue-primary/50 text-white rounded-full">
                             {bpm} BPM
@@ -325,8 +335,8 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
               />
             </div>
 
-            {/* BPM & Key */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* BPM, Key & Genre */}
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <label className="block text-xs text-gray-400 uppercase tracking-wide font-medium">
                   BPM
@@ -348,7 +358,18 @@ export default function AdminSongModal({ isOpen, onClose }: AdminSongModalProps)
                 <input
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
-                  placeholder="Am, C, G..."
+                  placeholder="Am, C..."
+                  className="w-full bg-surface-100/80 border border-surface-200 rounded-xl px-4 py-3.5 text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20 outline-none transition-all duration-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-wide font-medium">
+                  Genero
+                </label>
+                <input
+                  value={genre}
+                  onChange={(e) => setGenre(e.target.value)}
+                  placeholder="Pop, Rock..."
                   className="w-full bg-surface-100/80 border border-surface-200 rounded-xl px-4 py-3.5 text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20 outline-none transition-all duration-200"
                 />
               </div>

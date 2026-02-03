@@ -30,6 +30,7 @@ import {
   Pencil,
   ExternalLink,
   Clock,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEvent, useDeleteEvent, useAddSongToEvent, useRemoveSongFromEvent, useReorderEventSongs } from "@/hooks/use-events";
@@ -57,6 +58,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   const removeSongFromEvent = useRemoveSongFromEvent();
 
   const [showAddSong, setShowAddSong] = useState(false);
+  const [songSearchQuery, setSongSearchQuery] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [showCreateConcert, setShowCreateConcert] = useState(false);
@@ -67,13 +69,27 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   const eventSongs = displayEvent.songs || [];
   const eventConcerts = displayEvent.concerts || [];
 
-  // Filter out songs already in the event
+  // Filter out songs already in the event and apply search
   const availableSongs = allSongs?.filter(
-    (song) => !eventSongs.some((es) => es.id === song.id)
+    (song) => {
+      // Filter out songs already in event
+      if (eventSongs.some((es) => es.id === song.id)) return false;
+
+      // Apply search filter
+      if (songSearchQuery) {
+        const query = songSearchQuery.toLowerCase();
+        return (
+          song.title.toLowerCase().includes(query) ||
+          song.artist.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    }
   ) || [];
 
   const handleAddSong = async (songId: string) => {
     await addSongToEvent.mutateAsync({ eventId: event.id, songId });
+    setSongSearchQuery("");
     setShowAddSong(false);
   };
 
@@ -151,22 +167,23 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Setlist Section */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h3 className="flex items-center gap-2 text-white font-semibold text-lg">
-              <div className="w-8 h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
-                <Music size={16} className="text-brand-yellow" />
+      <div data-tour="event-setlist" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
+                <Music size={14} className="text-brand-yellow sm:w-4 sm:h-4" />
               </div>
-              Setlist del Evento
+              <span className="hidden xs:inline">Setlist del Evento</span>
+              <span className="xs:hidden">Setlist</span>
             </h3>
             {eventSongs.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-surface-100/50 px-2 py-1 rounded-full">
-                <span>{eventSongs.length} canciones</span>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-500 bg-surface-100/50 px-2 py-1 rounded-full">
+                <span>{eventSongs.length}</span>
                 {hasDurationData(eventSongs) && (
                   <>
                     <span>•</span>
-                    <Clock size={12} />
+                    <Clock size={10} className="sm:w-3 sm:h-3" />
                     <span>{formatDuration(calculateSetlistDuration(eventSongs))}</span>
                   </>
                 )}
@@ -176,26 +193,51 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
           {canManageEvents && !showAddSong && (
             <button
               onClick={() => setShowAddSong(true)}
-              className="flex items-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-1.5 rounded-lg hover:bg-brand-yellow/10"
+              className="flex items-center justify-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-2 rounded-lg hover:bg-brand-yellow/10 w-full sm:w-auto"
             >
               <Plus size={16} />
-              Agregar Canción
+              <span>Agregar</span>
             </button>
           )}
         </div>
 
-        {/* Add Song Selector */}
+        {/* Add Song Selector with Search */}
         {showAddSong && (
-          <div className="mb-4 p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mb-4 p-3 sm:p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Seleccionar canción:</span>
+              <span className="text-sm text-gray-400">Agregar canción:</span>
               <button
-                onClick={() => setShowAddSong(false)}
+                onClick={() => {
+                  setSongSearchQuery("");
+                  setShowAddSong(false);
+                }}
                 className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
               >
                 <X size={16} />
               </button>
             </div>
+
+            {/* Search Input */}
+            <div className="relative mb-3">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                value={songSearchQuery}
+                onChange={(e) => setSongSearchQuery(e.target.value)}
+                placeholder="Buscar canción o artista..."
+                className="w-full bg-surface-100 border border-surface-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/20 outline-none transition-all"
+                autoFocus
+              />
+              {songSearchQuery && (
+                <button
+                  onClick={() => setSongSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
             {availableSongs.length > 0 ? (
               <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-hide">
                 {availableSongs.map((song) => (
@@ -203,13 +245,13 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
                     key={song.id}
                     onClick={() => handleAddSong(song.id)}
                     disabled={addSongToEvent.isPending}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-white/5 text-left transition-all disabled:opacity-50"
+                    className="w-full flex items-center gap-3 p-2 sm:p-2.5 rounded-lg hover:bg-white/5 active:bg-white/10 text-left transition-all disabled:opacity-50"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
                       {song.coverUrl ? (
                         <img src={song.coverUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <Music size={16} className="text-gray-500" />
+                        <Music size={14} className="text-gray-500 sm:w-4 sm:h-4" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -221,7 +263,9 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 text-center py-6">No hay canciones disponibles para agregar</p>
+              <p className="text-sm text-gray-500 text-center py-6">
+                {songSearchQuery ? "No se encontraron canciones" : "No hay canciones disponibles"}
+              </p>
             )}
           </div>
         )}
@@ -272,7 +316,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
       </div>
 
       {/* Concerts Section */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+      <div data-tour="event-concerts" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
         <div className="flex items-center justify-between mb-4">
           <h3 className="flex items-center gap-2 text-white font-semibold text-lg">
             <div className="w-8 h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
@@ -298,14 +342,14 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
 
         {sortedConcerts.length > 0 ? (
           <div className="space-y-2">
-            {sortedConcerts.map((concert) => {
+            {sortedConcerts.map((concert, index) => {
               const concertDate = new Date(concert.date);
               const isUpcoming = concertDate >= new Date();
               const isDeleting = deletingConcertId === concert.id;
 
               return (
                 <div
-                  key={concert.id}
+                  key={concert.id || `concert-${index}`}
                   onClick={() => handleConcertClick(concert)}
                   className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-surface-100/50 border border-surface-200/30 hover:border-white/10 transition-all cursor-pointer group ${
                     isDeleting ? "opacity-50" : ""
@@ -401,21 +445,21 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
       {canManageEvents && (
         <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30">
           {showDeleteConfirm ? (
-            <div className="flex items-center justify-between bg-red-500/10 p-4 rounded-xl border border-red-500/30 animate-in fade-in duration-200">
-              <p className="text-sm text-red-400">¿Eliminar este evento permanentemente?</p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-500/10 p-4 rounded-xl border border-red-500/30 animate-in fade-in duration-200">
+              <p className="text-sm text-red-400">¿Eliminar este evento?</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
+                  className="flex-1 sm:flex-none px-4 py-2 text-sm text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-200"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDelete}
                   disabled={deleteEvent.isPending}
-                  className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50"
+                  className="flex-1 sm:flex-none px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50"
                 >
-                  {deleteEvent.isPending ? "Eliminando..." : "Sí, eliminar"}
+                  {deleteEvent.isPending ? "Eliminando..." : "Eliminar"}
                 </button>
               </div>
             </div>

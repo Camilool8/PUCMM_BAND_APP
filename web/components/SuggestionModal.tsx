@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Music, Sparkles, Link, Search, Loader2, Check, Clock, ExternalLink } from "lucide-react";
+import { Music, Sparkles, Link, Search, Loader2, Check, Clock, AlertTriangle, ThumbsUp } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { useCreateSong } from "@/hooks/use-songs";
+import { useCreateSong, useCheckDuplicate, useVoteSong, useMyVotes } from "@/hooks/use-songs";
 import { useResolveMusicLink, isMusicLink, formatDurationFromMs } from "@/hooks/use-music-metadata";
-import type { SongMetadata } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
+import type { SongMetadata, DuplicateCheckResult } from "@/lib/api";
 
 interface SuggestionModalProps {
   isOpen: boolean;
@@ -24,11 +25,28 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
   const [artist, setArtist] = useState("");
   const [bpm, setBpm] = useState("");
   const [key, setKey] = useState("");
+  const [genre, setGenre] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [durationMs, setDurationMs] = useState<number | null>(null);
+  const [isrc, setIsrc] = useState("");
+  const [spotifyUrl, setSpotifyUrl] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [appleMusicUrl, setAppleMusicUrl] = useState("");
 
+  // Duplicate detection
+  const [duplicateResult, setDuplicateResult] = useState<DuplicateCheckResult | null>(null);
+
+  const { canVote } = useAuth();
   const createSong = useCreateSong();
   const resolveLink = useResolveMusicLink();
+  const checkDuplicate = useCheckDuplicate();
+  const voteSong = useVoteSong();
+  const { data: myVotes = [] } = useMyVotes();
+
+  // Check if already voted for the duplicate
+  const hasVotedForDuplicate = duplicateResult?.existingSong
+    ? myVotes.includes(duplicateResult.existingSong.id)
+    : false;
 
   // Auto-resolve link when it looks valid
   useEffect(() => {
@@ -50,10 +68,44 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
       setArtist(m.artist);
       setBpm(m.bpm?.toString() || "");
       setKey(m.key || "");
+      setGenre(m.genre || "");
       setCoverUrl(m.coverUrl || "");
       setDurationMs(m.durationMs || null);
+      setIsrc(m.isrc || "");
+
+      // Set the source URL based on detected platform
+      if (musicLink.includes("spotify")) {
+        setSpotifyUrl(musicLink);
+      } else if (musicLink.includes("youtube") || musicLink.includes("youtu.be")) {
+        setYoutubeUrl(musicLink);
+      } else if (musicLink.includes("apple")) {
+        setAppleMusicUrl(musicLink);
+      }
+
+      // Check for duplicates
+      checkDuplicate.mutate(
+        { title: m.title, artist: m.artist, isrc: m.isrc },
+        {
+          onSuccess: (result) => setDuplicateResult(result),
+        }
+      );
     }
   }, [resolveLink.data]);
+
+  // Check duplicates when title/artist change in manual mode
+  useEffect(() => {
+    if (mode === "manual" && title && artist) {
+      const timer = setTimeout(() => {
+        checkDuplicate.mutate(
+          { title, artist },
+          {
+            onSuccess: (result) => setDuplicateResult(result),
+          }
+        );
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [title, artist, mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,11 +115,23 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
       artist,
       bpm: bpm ? parseInt(bpm) : undefined,
       key: key || undefined,
+      genre: genre || undefined,
       coverUrl: coverUrl || undefined,
       durationMs: durationMs || undefined,
+      isrc: isrc || undefined,
+      spotifyUrl: spotifyUrl || undefined,
+      youtubeUrl: youtubeUrl || undefined,
+      appleMusicUrl: appleMusicUrl || undefined,
     });
 
     handleClose();
+  };
+
+  const handleVoteForExisting = async () => {
+    if (duplicateResult?.existingSong) {
+      await voteSong.mutateAsync(duplicateResult.existingSong.id);
+      handleClose();
+    }
   };
 
   const handleClose = () => {
@@ -79,8 +143,14 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
     setArtist("");
     setBpm("");
     setKey("");
+    setGenre("");
     setCoverUrl("");
     setDurationMs(null);
+    setIsrc("");
+    setSpotifyUrl("");
+    setYoutubeUrl("");
+    setAppleMusicUrl("");
+    setDuplicateResult(null);
     resolveLink.reset();
     onClose();
   };
@@ -90,17 +160,18 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
     // Clear metadata when switching modes
     setMetadata(null);
     setMusicLink("");
+    setDuplicateResult(null);
     resolveLink.reset();
   };
 
-  const canSubmit = title && artist && !createSong.isPending;
+  const canSubmit = title && artist && !createSong.isPending && !duplicateResult?.isDuplicate;
   const isLoading = resolveLink.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <Modal.Header icon={<Sparkles size={24} />} subtitle="Agrega una nueva canción al repertorio">
-          Sugerir Canción
+    <Modal isOpen={isOpen} onClose={handleClose} size="md" data-tour="suggestion-modal">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <Modal.Header icon={<Sparkles size={24} />} subtitle="Agrega una nueva cancion al repertorio">
+          Sugerir Cancion
         </Modal.Header>
 
         <Modal.Body className="space-y-5">
@@ -137,9 +208,9 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="block text-xs text-gray-400 uppercase tracking-wide font-medium">
-                  Enlace de Música
+                  Enlace de Musica
                 </label>
-                <div className="relative">
+                <div className="relative" data-tour="suggestion-link-input">
                   <input
                     value={musicLink}
                     onChange={(e) => setMusicLink(e.target.value)}
@@ -158,7 +229,7 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
                       <Loader2 size={20} className="text-brand-yellow animate-spin" />
                     </div>
                   )}
-                  {metadata && !isLoading && (
+                  {metadata && !isLoading && !duplicateResult?.isDuplicate && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
                       <Check size={20} className="text-emerald-400" />
                     </div>
@@ -170,8 +241,8 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
               </div>
 
               {/* Metadata Preview */}
-              {metadata && (
-                <div className="p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
+              {metadata && !duplicateResult?.isDuplicate && (
+                <div data-tour="suggestion-preview" className="p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="flex gap-4">
                     {/* Cover */}
                     <div className="w-20 h-20 rounded-lg bg-surface-200 shrink-0 overflow-hidden">
@@ -212,7 +283,7 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
 
                   {/* Edit Note */}
                   <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-surface-200/50">
-                    Puedes editar la información antes de enviar
+                    Puedes editar la informacion antes de enviar
                   </p>
                 </div>
               )}
@@ -221,20 +292,92 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
               {resolveLink.isError && musicLink && (
                 <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
                   <p className="text-sm text-red-400">
-                    No se pudo obtener información del enlace. Verifica que sea válido o usa el modo manual.
+                    No se pudo obtener informacion del enlace. Verifica que sea valido o usa el modo manual.
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Editable Fields (shown when we have metadata or in manual mode) */}
-          {(metadata || mode === "manual") && (
+          {/* Duplicate Warning */}
+          {duplicateResult?.isDuplicate && duplicateResult.existingSong && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-400">
+                    Esta cancion ya existe en el repertorio
+                  </p>
+                  <div className="flex items-center gap-3 mt-3 p-3 bg-surface-100/50 rounded-lg">
+                    {duplicateResult.existingSong.coverUrl && (
+                      <img
+                        src={duplicateResult.existingSong.coverUrl}
+                        alt=""
+                        className="w-12 h-12 rounded-lg object-cover shrink-0"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-white font-medium truncate">
+                        {duplicateResult.existingSong.title}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">
+                        {duplicateResult.existingSong.artist}
+                      </p>
+                      <span
+                        className={`text-xs mt-1 inline-block px-2 py-0.5 rounded-full ${
+                          duplicateResult.existingSong.status === "PENDING"
+                            ? "bg-red-500/20 text-red-400"
+                            : duplicateResult.existingSong.status === "REHEARSING"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : duplicateResult.existingSong.status === "READY"
+                            ? "bg-green-500/20 text-green-400"
+                            : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
+                        {duplicateResult.existingSong.status === "PENDING"
+                          ? "Sugerida"
+                          : duplicateResult.existingSong.status === "REHEARSING"
+                          ? "Ensayando"
+                          : duplicateResult.existingSong.status === "READY"
+                          ? "Lista"
+                          : "Archivada"}
+                      </span>
+                    </div>
+                  </div>
+                  {duplicateResult.existingSong.status === "PENDING" && canVote && (
+                    <button
+                      type="button"
+                      onClick={handleVoteForExisting}
+                      disabled={voteSong.isPending || hasVotedForDuplicate}
+                      className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 text-sm font-medium transition-all disabled:opacity-50"
+                    >
+                      {voteSong.isPending ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : hasVotedForDuplicate ? (
+                        <>
+                          <Check size={16} />
+                          Ya votaste por esta cancion
+                        </>
+                      ) : (
+                        <>
+                          <ThumbsUp size={16} />
+                          Votar por esta sugerencia
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Editable Fields (shown when we have metadata or in manual mode, and no duplicate) */}
+          {(metadata || mode === "manual") && !duplicateResult?.isDuplicate && (
             <div className="space-y-4">
               {/* Title */}
               <div className="space-y-2">
                 <label className="block text-xs text-gray-400 uppercase tracking-wide font-medium">
-                  Título *
+                  Titulo *
                 </label>
                 <input
                   required
@@ -316,12 +459,14 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
           )}
 
           {/* Hint */}
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-surface-100/50 border border-surface-200/50">
-            <Music size={16} className="text-gray-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-gray-400">
-              Tu sugerencia será revisada por los administradores antes de ser añadida al repertorio.
-            </p>
-          </div>
+          {!duplicateResult?.isDuplicate && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-surface-100/50 border border-surface-200/50">
+              <Music size={16} className="text-gray-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-gray-400">
+                Tu sugerencia sera revisada por los administradores antes de ser anadida al repertorio.
+              </p>
+            </div>
+          )}
         </Modal.Body>
 
         <Modal.Footer className="flex gap-3">
@@ -337,28 +482,30 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
           >
             Cancelar
           </button>
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className="
-              flex-1 py-3.5 rounded-xl
-              bg-brand-yellow hover:bg-brand-yellow/90
-              text-brand-blue-primary font-bold
-              shadow-lg shadow-brand-yellow/20
-              transition-all duration-200
-              disabled:opacity-50 disabled:cursor-not-allowed
-              disabled:shadow-none
-            "
-          >
-            {createSong.isPending ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-4 h-4 border-2 border-brand-blue-primary/30 border-t-brand-blue-primary rounded-full animate-spin" />
-                Enviando...
-              </span>
-            ) : (
-              "Enviar Sugerencia"
-            )}
-          </button>
+          {!duplicateResult?.isDuplicate && (
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="
+                flex-1 py-3.5 rounded-xl
+                bg-brand-yellow hover:bg-brand-yellow/90
+                text-brand-blue-primary font-bold
+                shadow-lg shadow-brand-yellow/20
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                disabled:shadow-none
+              "
+            >
+              {createSong.isPending ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-brand-blue-primary/30 border-t-brand-blue-primary rounded-full animate-spin" />
+                  Enviando...
+                </span>
+              ) : (
+                "Enviar Sugerencia"
+              )}
+            </button>
+          )}
         </Modal.Footer>
       </form>
     </Modal>

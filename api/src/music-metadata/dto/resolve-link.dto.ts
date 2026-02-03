@@ -16,6 +16,7 @@ export interface SongMetadata {
   key?: string;
   releaseDate?: string;
   isrc?: string;
+  genre?: string;
   spotifyId?: string;
   youtubeId?: string;
   appleMusicId?: string;

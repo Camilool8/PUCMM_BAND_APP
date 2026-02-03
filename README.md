@@ -233,84 +233,96 @@ App runs on http://localhost:3000
 
 #### ✅ APIs
 
-| Endpoint                           | Method | Auth            | Description                                                 |
-| ---------------------------------- | ------ | --------------- | ----------------------------------------------------------- |
-| `/songs`                           | GET    | User            | List all songs                                              |
-| `/songs/:id`                       | GET    | User            | Get song by ID                                              |
-| `/songs`                           | POST   | User            | Create new song                                             |
-| `/songs/:id`                       | PATCH  | User            | Update song (status, etc.)                                  |
-| `/songs/:id`                       | DELETE | User            | Delete song                                                 |
-| `/users/me`                        | GET    | User            | Get current user info                                       |
-| `/users/me/profile`                | PATCH  | MEMBER+         | Update user profile (name, avatar, instruments, phone, bio) |
-| `/users`                           | GET    | SUPERADMIN      | List all users                                              |
-| `/users/:id/role`                  | PATCH  | SUPERADMIN      | Change user role                                            |
-| `/uploads/image`                   | POST   | User            | Upload image (max 15MB)                                     |
-| `/uploads/pdf`                     | POST   | User            | Upload PDF score (max 150MB)                                |
-| `/uploads/video`                   | POST   | User            | Upload video (max 1.5GB)                                    |
-| `/uploads/asset`                   | POST   | User            | Link uploaded file to song/concert                          |
-| `/uploads/song/:id/assets`         | GET    | User            | Get assets for a song                                       |
-| `/uploads/concert/:id/assets`      | GET    | User            | Get assets for a concert                                    |
-| `/uploads/asset/:id`               | DELETE | User            | Delete asset and file                                       |
-| `/repertoire-sections`             | GET    | User            | List all repertoire sections                                |
-| `/repertoire-sections/:key`        | GET    | User            | Get section by key                                          |
-| `/repertoire-sections/:key`        | PATCH  | SECTION_LEADER+ | Update section settings                                     |
-| `/repertoire-sections/:key/banner` | DELETE | SECTION_LEADER+ | Clear section banner                                        |
-| `/events`                          | GET    | User            | List all events                                             |
-| `/events/:id`                      | GET    | User            | Get event with songs and concerts                           |
-| `/events`                          | POST   | SECTION_LEADER+ | Create new event                                            |
-| `/events/:id`                      | PATCH  | SECTION_LEADER+ | Update event                                                |
-| `/events/:id`                      | DELETE | SECTION_LEADER+ | Delete event                                                |
-| `/events/:id/songs`                | POST   | SECTION_LEADER+ | Add song to event                                           |
-| `/events/:id/songs/:songId`        | DELETE | SECTION_LEADER+ | Remove song from event                                      |
-| `/concerts`                        | GET    | User            | List all concerts (with event relation)                     |
-| `/concerts/event/:eventId`         | GET    | User            | List concerts for specific event                            |
-| `/concerts/:id`                    | GET    | User            | Get concert with songs and event                            |
-| `/concerts`                        | POST   | SECTION_LEADER+ | Create new concert                                          |
-| `/concerts/:id`                    | PATCH  | SECTION_LEADER+ | Update concert                                              |
-| `/concerts/:id`                    | DELETE | SECTION_LEADER+ | Delete concert                                              |
-| `/concerts/:id/songs`              | POST   | SECTION_LEADER+ | Add song to concert setlist                                 |
-| `/concerts/:id/songs/:songId`      | DELETE | SECTION_LEADER+ | Remove song from concert setlist                            |
-| `/concerts/:id/copy-from-event`    | POST   | SECTION_LEADER+ | Copy all songs from parent event to concert                 |
-| `/events/:id/songs/reorder`        | PATCH  | SECTION_LEADER+ | Reorder songs in event setlist                              |
-| `/concerts/:id/songs/reorder`      | PATCH  | SECTION_LEADER+ | Reorder songs in concert setlist                            |
-| `/music-metadata/resolve`          | POST   | User            | Resolve music link (Spotify/YouTube/Apple Music) to metadata|
-| `/music-metadata/search`           | GET    | User            | Search song by title/artist                                 |
-| `/music-metadata/detect-platform`  | POST   | User            | Detect music platform from URL                              |
+| Endpoint                           | Method | Auth            | Description                                                  |
+| ---------------------------------- | ------ | --------------- | ------------------------------------------------------------ |
+| `/songs`                           | GET    | User            | List all songs                                               |
+| `/songs/:id`                       | GET    | User            | Get song by ID                                               |
+| `/songs`                           | POST   | User            | Create new song                                              |
+| `/songs/:id`                       | PATCH  | User            | Update song (status, etc.)                                   |
+| `/songs/:id`                       | DELETE | User            | Delete song                                                  |
+| `/users/me`                        | GET    | User            | Get current user info                                        |
+| `/users/me/profile`                | PATCH  | MEMBER+         | Update user profile (name, avatar, instruments, phone, bio)  |
+| `/users`                           | GET    | SUPERADMIN      | List all users                                               |
+| `/users/:id/role`                  | PATCH  | SUPERADMIN      | Change user role                                             |
+| `/uploads/image`                   | POST   | User            | Upload image (max 15MB)                                      |
+| `/uploads/pdf`                     | POST   | User            | Upload PDF score (max 150MB)                                 |
+| `/uploads/video`                   | POST   | User            | Upload video (max 1.5GB)                                     |
+| `/uploads/asset`                   | POST   | User            | Link uploaded file to song/concert                           |
+| `/uploads/song/:id/assets`         | GET    | User            | Get assets for a song                                        |
+| `/uploads/concert/:id/assets`      | GET    | User            | Get assets for a concert                                     |
+| `/uploads/asset/:id`               | DELETE | User            | Delete asset and file                                        |
+| `/repertoire-sections`             | GET    | User            | List all repertoire sections                                 |
+| `/repertoire-sections/:key`        | GET    | User            | Get section by key                                           |
+| `/repertoire-sections/:key`        | PATCH  | SECTION_LEADER+ | Update section settings                                      |
+| `/repertoire-sections/:key/banner` | DELETE | SECTION_LEADER+ | Clear section banner                                         |
+| `/events`                          | GET    | User            | List all events                                              |
+| `/events/:id`                      | GET    | User            | Get event with songs and concerts                            |
+| `/events`                          | POST   | SECTION_LEADER+ | Create new event                                             |
+| `/events/:id`                      | PATCH  | SECTION_LEADER+ | Update event                                                 |
+| `/events/:id`                      | DELETE | SECTION_LEADER+ | Delete event                                                 |
+| `/events/:id/songs`                | POST   | SECTION_LEADER+ | Add song to event                                            |
+| `/events/:id/songs/:songId`        | DELETE | SECTION_LEADER+ | Remove song from event                                       |
+| `/concerts`                        | GET    | User            | List all concerts (with event relation)                      |
+| `/concerts/event/:eventId`         | GET    | User            | List concerts for specific event                             |
+| `/concerts/:id`                    | GET    | User            | Get concert with songs and event                             |
+| `/concerts`                        | POST   | SECTION_LEADER+ | Create new concert                                           |
+| `/concerts/:id`                    | PATCH  | SECTION_LEADER+ | Update concert                                               |
+| `/concerts/:id`                    | DELETE | SECTION_LEADER+ | Delete concert                                               |
+| `/concerts/:id/songs`              | POST   | SECTION_LEADER+ | Add song to concert setlist                                  |
+| `/concerts/:id/songs/:songId`      | DELETE | SECTION_LEADER+ | Remove song from concert setlist                             |
+| `/concerts/:id/copy-from-event`    | POST   | SECTION_LEADER+ | Copy all songs from parent event to concert                  |
+| `/events/:id/songs/reorder`        | PATCH  | SECTION_LEADER+ | Reorder songs in event setlist                               |
+| `/concerts/:id/songs/reorder`      | PATCH  | SECTION_LEADER+ | Reorder songs in concert setlist                             |
+| `/music-metadata/resolve`          | POST   | User            | Resolve music link (Spotify/YouTube/Apple Music) to metadata |
+| `/music-metadata/search`           | GET    | User            | Search song by title/artist                                  |
+| `/music-metadata/detect-platform`  | POST   | User            | Detect music platform from URL                               |
+| `/songs/:id/vote`                  | POST   | User            | Add vote to a song                                           |
+| `/songs/:id/vote`                  | DELETE | User            | Remove vote from a song                                      |
+| `/songs/votes/me`                  | GET    | User            | Get current user's voted song IDs                            |
+| `/songs/:id/lead-vocals/:userId`   | POST   | SECTION_LEADER+ | Add lead vocal to a song                                     |
+| `/songs/:id/lead-vocals/:userId`   | DELETE | SECTION_LEADER+ | Remove lead vocal from a song                                |
+| `/songs/check-duplicate`           | POST   | User            | Check if song already exists by ISRC or title/artist         |
 
 ### Phase 2: Gestión ✅ Complete
 
-| Feature                       | Status  | Notes                                                         |
-| ----------------------------- | ------- | ------------------------------------------------------------- |
-| **File Upload System**        | ✅ Done | Images (15MB), PDFs (150MB), Videos (1.5GB)                   |
-| **FileDropzone Component**    | ✅ Done | Drag-and-drop with progress tracking                          |
-| **User Profile System**       | ✅ Done | Avatar upload, instruments, phone, bio                        |
-| **Repertoire Sections**       | ✅ Done | Customizable headers with banners, icons, colors              |
-| **Blurred Banner Effect**     | ✅ Done | Backdrop blur with dark gradient overlay                      |
-| Custom Covers/Banners         | ✅ Done | Upload images for sections                                    |
-| **Events module**             | ✅ Done | CRUD for events (Navidad, Graduación, etc.) with setlist      |
-| **Concerts module**           | ✅ Done | Performance dates, dedicated page, setlist per concert        |
-| **Concerts Navigation**       | ✅ Done | Sidebar + BottomNav links, upcoming/past tabs                 |
-| **Concert from Event Link**   | ✅ Done | Click concert in event → navigate to /concerts?concert={id}   |
-| **Copy Setlist Feature**      | ✅ Done | Copy songs from event to concert setlist                      |
-| **Concert photos/videos**     | ✅ Done | MediaGallery component with lightbox for videos/images        |
-| **Setlists drag-and-drop**    | ✅ Done | @dnd-kit integration with touch support, persisted order      |
-| **Time calculation**          | ✅ Done | formatDuration utility, shows total setlist duration          |
-| **PDF viewer**                | ✅ Done | react-pdf integration in PDFViewerModal with zoom/pagination  |
-| **Link song to user**         | ✅ Done | suggestedBy relation populated on song creation, shown in UI  |
+| Feature                     | Status  | Notes                                                        |
+| --------------------------- | ------- | ------------------------------------------------------------ |
+| **File Upload System**      | ✅ Done | Images (15MB), PDFs (150MB), Videos (1.5GB)                  |
+| **FileDropzone Component**  | ✅ Done | Drag-and-drop with progress tracking                         |
+| **User Profile System**     | ✅ Done | Avatar upload, instruments, phone, bio                       |
+| **Repertoire Sections**     | ✅ Done | Customizable headers with banners, icons, colors             |
+| **Blurred Banner Effect**   | ✅ Done | Backdrop blur with dark gradient overlay                     |
+| Custom Covers/Banners       | ✅ Done | Upload images for sections                                   |
+| **Events module**           | ✅ Done | CRUD for events (Navidad, Graduación, etc.) with setlist     |
+| **Concerts module**         | ✅ Done | Performance dates, dedicated page, setlist per concert       |
+| **Concerts Navigation**     | ✅ Done | Sidebar + BottomNav links, upcoming/past tabs                |
+| **Concert from Event Link** | ✅ Done | Click concert in event → navigate to /concerts?concert={id}  |
+| **Copy Setlist Feature**    | ✅ Done | Copy songs from event to concert setlist                     |
+| **Concert photos/videos**   | ✅ Done | MediaGallery component with lightbox for videos/images       |
+| **Setlists drag-and-drop**  | ✅ Done | @dnd-kit integration with touch support, persisted order     |
+| **Time calculation**        | ✅ Done | formatDuration utility, shows total setlist duration         |
+| **PDF viewer**              | ✅ Done | react-pdf integration in PDFViewerModal with zoom/pagination |
+| **Link song to user**       | ✅ Done | suggestedBy relation populated on song creation, shown in UI |
 
 ### Phase 3: Social (In Progress)
 
-| Feature                     | Status  | Notes                                                           |
-| --------------------------- | ------- | --------------------------------------------------------------- |
-| **Music Link Integration**  | ✅ Done | Paste Spotify/YouTube/Apple Music link to auto-fill song data   |
-| **Spotify API**             | ✅ Done | Title, artist, cover, duration, ISRC via Spotify Web API        |
-| **YouTube/Apple Music**     | ✅ Done | Link resolution via Odesli API, converts to Spotify for lookup  |
-| **BPM/Key Detection**       | ✅ Done | ReccoBeats API for tempo/key (Spotify deprecated audio features)|
-| Comments system             | ❌ Pending | Per-song threads                                              |
-| Push notifications          | ❌ Pending | PWA notifications                                             |
-| Email notifications         | ❌ Pending | Event updates                                                 |
-| Mode "On Stage"             | ❌ Pending | Live performance view                                         |
-| Duplicate detection         | ❌ Pending | ISRC/fuzzy matching                                           |
+| Feature                    | Status     | Notes                                                            |
+| -------------------------- | ---------- | ---------------------------------------------------------------- |
+| **Music Link Integration** | ✅ Done    | Paste Spotify/YouTube/Apple Music link to auto-fill song data    |
+| **Spotify API**            | ✅ Done    | Title, artist, cover, duration, ISRC via Spotify Web API         |
+| **YouTube/Apple Music**    | ✅ Done    | Link resolution via Odesli API, converts to Spotify for lookup   |
+| **BPM/Key Detection**      | ✅ Done    | ReccoBeats API for tempo/key (Spotify deprecated audio features) |
+| **Genre Detection**        | ✅ Done    | iTunes API extracts genre from `primaryGenreName` field          |
+| **Duplicate Detection**    | ✅ Done    | ISRC + title/artist matching prevents duplicate suggestions      |
+| **Voting System**          | ✅ Done    | Members can upvote song suggestions, vote count shown in list    |
+| **Lead Vocals Assignment** | ✅ Done    | Assign singers to songs via SongDetailModal dropdown             |
+| **Events in Song Detail**  | ✅ Done    | See which events a song belongs to, click to navigate            |
+| **Enhanced Song List**     | ✅ Done    | Genre, duration, platform quick-links (Spotify/YT/Apple) icons   |
+| **Genre Filter**           | ✅ Done    | Filter songs by genre with scrollable chips in repertoire page   |
+| Comments system            | ❌ Pending | Per-song threads                                                 |
+| Push notifications         | ❌ Pending | PWA notifications                                                |
+| Email notifications        | ❌ Pending | Event updates                                                    |
+| Mode "On Stage"            | ❌ Pending | Live performance view                                            |
 
 ### Phase 4: Advanced (Not Started)
 
@@ -369,9 +381,11 @@ User ──────────< Song >────────── Event
   │               │                 ├── EventSong (junction with order)
   │               │                 │
   │               │                 └── Concert (performance dates)
-  └── AuditLog    ├── SongVersion        │
-                  ├── Asset ─────────────┼── ConcertSong (junction with order)
-                  └── Tag ───────────────┘
+  ├── SongVote    ├── SongVersion        │
+  │               ├── Asset ─────────────┼── ConcertSong (junction with order)
+  └── AuditLog    └── Tag ───────────────┘
+
+User >──── leadVocals ────< Song (many-to-many)
 
 RepertoireSection (independent - customizable UI headers)
 ```
@@ -379,7 +393,8 @@ RepertoireSection (independent - customizable UI headers)
 ### Models
 
 - **User**: Band members with roles + profile data (avatarUrl, instruments[], phone, bio)
-- **Song**: Musical pieces with metadata (title, artist, BPM, key, status, coverUrl, durationMs, suggestedBy)
+- **Song**: Musical pieces with metadata (title, artist, BPM, key, genre, status, coverUrl, durationMs, suggestedBy, leadVocals)
+- **SongVote**: Junction table for user votes on songs (voting system for suggestions)
 - **SongVersion**: Different arrangements (Studio, Live, Remix)
 - **Event**: Recurring event types (e.g., "Navidad", "Graduación"). Contains planned songs via EventSong junction table with ordering.
 - **EventSong**: Junction table linking Event↔Song with `order` field for setlist ordering.
@@ -530,7 +545,7 @@ The UI follows a **Spotify-inspired** dark theme design:
 - **Depth & shadows** for visual hierarchy
 - **Brand colors**: PUCMM Blue (#0033A0), Yellow (#FFD200), Red (#D22630)
 
-See [Banda_App_Diseno.md](./Banda_App_Diseno.md) for complete design specifications.
+See [Banda_App_Diseno.md](./docs/Banda_App_Diseno.md) for complete design specifications.
 
 ## Music Link Integration
 
@@ -562,13 +577,13 @@ User pastes link (Spotify/YouTube/Apple Music)
 
 ### Supported Platforms
 
-| Platform     | Link Format                                    |
-|--------------|------------------------------------------------|
-| Spotify      | `https://open.spotify.com/track/...`           |
-| YouTube      | `https://www.youtube.com/watch?v=...`          |
-| YouTube      | `https://youtu.be/...`                         |
-| YouTube Music| `https://music.youtube.com/watch?v=...`        |
-| Apple Music  | `https://music.apple.com/.../album/.../...`    |
+| Platform      | Link Format                                 |
+| ------------- | ------------------------------------------- |
+| Spotify       | `https://open.spotify.com/track/...`        |
+| YouTube       | `https://www.youtube.com/watch?v=...`       |
+| YouTube       | `https://youtu.be/...`                      |
+| YouTube Music | `https://music.youtube.com/watch?v=...`     |
+| Apple Music   | `https://music.apple.com/.../album/.../...` |
 
 ### Getting Spotify Credentials
 
@@ -638,35 +653,35 @@ cd web && npm run build     # Next.js build
 
 ### Components
 
-| Component              | Location                              | Description                               |
-| ---------------------- | ------------------------------------- | ----------------------------------------- |
-| `Modal`                | `components/ui/Modal.tsx`             | Compound modal with Header, Body, Footer  |
-| `FileDropzone`         | `components/ui/FileDropzone.tsx`      | Drag-and-drop upload with progress        |
-| `StatusBadge`          | `components/StatusBadge.tsx`          | Song status indicator                     |
-| `SongRow`              | `components/SongRow.tsx`              | Playlist-style song row                   |
-| `UserProfileModal`     | `components/UserProfileModal.tsx`     | Profile editing with avatar upload        |
-| `SectionSettingsModal` | `components/SectionSettingsModal.tsx` | Section customization                     |
-| `AdminUsersModal`      | `components/AdminUsersModal.tsx`      | User management                           |
-| `EventRow`             | `components/EventRow.tsx`             | Event list item with icon and counts          |
-| `EventContent`         | `components/EventContent.tsx`         | Event detail view with drag-drop setlist      |
-| `CreateEventModal`     | `components/CreateEventModal.tsx`     | Event create/edit form with icon picker       |
-| `ConcertContent`       | `components/ConcertContent.tsx`       | Concert detail with drag-drop setlist + media |
-| `CreateConcertModal`   | `components/CreateConcertModal.tsx`   | Concert create/edit form                      |
-| `MediaGallery`         | `components/MediaGallery.tsx`         | Video/image gallery with lightbox             |
-| `PDFViewerModal`       | `components/PDFViewerModal.tsx`       | PDF score viewer with pagination & zoom       |
-| `SortableSongItem`     | `components/SortableSongItem.tsx`     | Draggable song row for setlist ordering       |
+| Component              | Location                              | Description                                          |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------- |
+| `Modal`                | `components/ui/Modal.tsx`             | Compound modal with Header, Body, Footer             |
+| `FileDropzone`         | `components/ui/FileDropzone.tsx`      | Drag-and-drop upload with progress                   |
+| `StatusBadge`          | `components/StatusBadge.tsx`          | Song status indicator                                |
+| `SongRow`              | `components/SongRow.tsx`              | Song row with genre, duration, platform links, votes |
+| `UserProfileModal`     | `components/UserProfileModal.tsx`     | Profile editing with avatar upload                   |
+| `SectionSettingsModal` | `components/SectionSettingsModal.tsx` | Section customization                                |
+| `AdminUsersModal`      | `components/AdminUsersModal.tsx`      | User management                                      |
+| `EventRow`             | `components/EventRow.tsx`             | Event list item with icon and counts                 |
+| `EventContent`         | `components/EventContent.tsx`         | Event detail view with drag-drop setlist             |
+| `CreateEventModal`     | `components/CreateEventModal.tsx`     | Event create/edit form with icon picker              |
+| `ConcertContent`       | `components/ConcertContent.tsx`       | Concert detail with drag-drop setlist + media        |
+| `CreateConcertModal`   | `components/CreateConcertModal.tsx`   | Concert create/edit form                             |
+| `MediaGallery`         | `components/MediaGallery.tsx`         | Video/image gallery with lightbox                    |
+| `PDFViewerModal`       | `components/PDFViewerModal.tsx`       | PDF score viewer with pagination & zoom              |
+| `SortableSongItem`     | `components/SortableSongItem.tsx`     | Draggable song row for setlist ordering              |
 
 ### Hooks
 
-| Hook                         | Location                | Description                        |
-| ---------------------------- | ----------------------- | ---------------------------------- |
-| `useAuth`                    | `hooks/use-auth.ts`     | Auth state, permissions, user data |
-| `useSongs`                   | `hooks/use-songs.ts`    | Songs CRUD operations              |
-| `useUsers`                   | `hooks/use-users.ts`    | Users list and role management     |
-| `useUpdateProfile`           | `hooks/use-users.ts`    | Profile update mutation            |
-| `useSections`                | `hooks/use-sections.ts` | Repertoire sections CRUD           |
-| `useEvents`                  | `hooks/use-events.ts`   | Events CRUD + song management      |
-| `useEvent(id)`               | `hooks/use-events.ts`   | Single event with full relations   |
+| Hook                         | Location                | Description                             |
+| ---------------------------- | ----------------------- | --------------------------------------- |
+| `useAuth`                    | `hooks/use-auth.ts`     | Auth state, permissions, user data      |
+| `useSongs`                   | `hooks/use-songs.ts`    | Songs CRUD operations                   |
+| `useUsers`                   | `hooks/use-users.ts`    | Users list and role management          |
+| `useUpdateProfile`           | `hooks/use-users.ts`    | Profile update mutation                 |
+| `useSections`                | `hooks/use-sections.ts` | Repertoire sections CRUD                |
+| `useEvents`                  | `hooks/use-events.ts`   | Events CRUD + song management           |
+| `useEvent(id)`               | `hooks/use-events.ts`   | Single event with full relations        |
 | `useConcerts`                | `hooks/use-concerts.ts` | All concerts with event relation        |
 | `useConcert(id)`             | `hooks/use-concerts.ts` | Single concert with songs               |
 | `useCopyEventSongsToConcert` | `hooks/use-concerts.ts` | Copy setlist from event to concert      |
@@ -674,6 +689,11 @@ cd web && npm run build     # Next.js build
 | `useReorderConcertSongs`     | `hooks/use-concerts.ts` | Reorder songs in concert setlist        |
 | `useUpload`                  | `hooks/use-upload.ts`   | File upload with progress               |
 | `useConcertAssets`           | `hooks/use-upload.ts`   | Get assets for a concert (videos/media) |
+| `useAddVote`                 | `hooks/use-songs.ts`    | Add vote to a song                      |
+| `useRemoveVote`              | `hooks/use-songs.ts`    | Remove vote from a song                 |
+| `useUserVotes`               | `hooks/use-songs.ts`    | Get current user's voted song IDs       |
+| `useAddLeadVocal`            | `hooks/use-songs.ts`    | Add lead vocal singer to a song         |
+| `useRemoveLeadVocal`         | `hooks/use-songs.ts`    | Remove lead vocal singer from a song    |
 
 ### API Client Methods
 
@@ -710,10 +730,16 @@ cd web && npm run build     # Next.js build
 | `api.copyEventSongsToConcert(concertId)`       | Copy event songs to concert       |
 | `api.reorderEventSongs(eventId, songIds)`      | Reorder songs in event setlist    |
 | `api.reorderConcertSongs(concertId, songIds)`  | Reorder songs in concert setlist  |
+| `api.addVote(songId)`                          | Add vote to a song                |
+| `api.removeVote(songId)`                       | Remove vote from a song           |
+| `api.getUserVotes()`                           | Get current user's voted song IDs |
+| `api.addLeadVocal(songId, userId)`             | Add lead vocal to a song          |
+| `api.removeLeadVocal(songId, userId)`          | Remove lead vocal from a song     |
+| `api.checkDuplicate(title, artist, isrc?)`     | Check if song exists (duplicate)  |
 
 ## Requirements
 
-Full software requirements are documented in [Banda_App_Requisitos.md](./Banda_App_Requisitos.md).
+Full software requirements are documented in [Banda_App_Requisitos.md](./docs/Banda_App_Requisitos.md).
 
 ## License
 

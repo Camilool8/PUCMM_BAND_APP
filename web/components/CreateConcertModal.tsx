@@ -123,7 +123,7 @@ export default function CreateConcertModal({
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
-      <form onSubmit={handleSubmit} className="flex flex-col">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <Modal.Header
           icon={<Calendar size={24} />}
           subtitle={isEditing ? "Modificar los detalles del concierto" : `Agregar un concierto a ${event.name}`}

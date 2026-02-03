@@ -47,6 +47,7 @@ model User {
 
   suggestions Song[]      @relation("UserSuggestions")
   leadVocals  Song[]      @relation("SongLeadVocals")
+  songVotes   SongVote[]
   auditLogs   AuditLog[]
 
   @@map("users")
@@ -58,6 +59,7 @@ model Song {
   artist      String
   bpm         Int?
   key         String?
+  genre       String?
   status      SongStatus @default(PENDING)
   coverUrl    String?
   durationMs  Int?
@@ -80,11 +82,25 @@ model Song {
   eventSongs    EventSong[]    // Explicit junction for events
   concertSongs  ConcertSong[]  // Explicit junction for concerts
   assets        Asset[]
+  votes         SongVote[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@map("songs")
+}
+
+// Voting system for song suggestions
+model SongVote {
+  id        String   @id @default(uuid())
+  userId    String
+  songId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, songId])  // Each user can only vote once per song
+  @@map("song_votes")
 }
 
 model SongVersion {

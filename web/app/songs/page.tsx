@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSongs } from "@/hooks/use-songs";
 import { useSections } from "@/hooks/use-sections";
 import { useAuth } from "@/hooks/use-auth";
+import { useTour } from "@/hooks/use-tour";
 import SongRow from "@/components/SongRow";
 import SongDetailModal from "@/components/SongDetailModal";
 import SuggestionModal from "@/components/SuggestionModal";
@@ -19,6 +20,7 @@ import {
   Library,
   Clock,
   Settings,
+  Filter,
   type LucideIcon,
 } from "lucide-react";
 import type { Song, RepertoireSection } from "@/lib/api";
@@ -113,9 +115,13 @@ const FALLBACK_CONFIG: Record<TabType, Partial<RepertoireSection>> = {
   },
 };
 
+type StatusFilter = "all" | "READY" | "REHEARSING";
+
 export default function SongsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("repertorio");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -125,6 +131,30 @@ export default function SongsPage() {
   const { data: songs, isLoading, error } = useSongs();
   const { data: sections } = useSections();
   const { canSuggestSongs, canManageSongs } = useAuth();
+  const { registerModal, unregisterModal } = useTour();
+
+  // Register modal for tour system
+  useEffect(() => {
+    // Only register when we have songs to show
+    if (!songs || songs.length === 0) return;
+
+    registerModal("song-detail", {
+      open: () => {
+        // Find the first song to show as example
+        const exampleSong = songs.find((s) => s.status === "READY" || s.status === "REHEARSING") || songs[0];
+        if (exampleSong) {
+          setSelectedSong(exampleSong);
+        }
+      },
+      close: () => {
+        setSelectedSong(null);
+      },
+    });
+
+    return () => {
+      unregisterModal("song-detail");
+    };
+  }, [songs, registerModal, unregisterModal]);
 
   // Get active section config from API or use fallback
   const sectionConfig = useMemo(() => {
@@ -146,7 +176,27 @@ export default function SongsPage() {
 
   const TabIcon = ICON_MAP[sectionConfig.iconName] || Music;
 
-  // Filter songs based on active tab and search query
+  // Extract unique genres from all songs in current tab
+  const availableGenres = useMemo(() => {
+    if (!songs) return [];
+
+    let tabSongs = songs;
+    if (activeTab === "repertorio") {
+      tabSongs = tabSongs.filter((s) => s.status === "REHEARSING" || s.status === "READY");
+    } else if (activeTab === "sugerencias") {
+      tabSongs = tabSongs.filter((s) => s.status === "PENDING");
+    } else if (activeTab === "archivadas") {
+      tabSongs = tabSongs.filter((s) => s.status === "ARCHIVED");
+    }
+
+    const genres = tabSongs
+      .map((s) => s.genre)
+      .filter((g): g is string => !!g);
+
+    return [...new Set(genres)].sort();
+  }, [songs, activeTab]);
+
+  // Filter songs based on active tab, search query, genre, and status
   const filteredSongs = useMemo(() => {
     if (!songs) return [];
 
@@ -154,11 +204,21 @@ export default function SongsPage() {
 
     // Tab filtering
     if (activeTab === "repertorio") {
-      filtered = filtered.filter((s) => s.status === "REHEARSING" || s.status === "READY");
+      // Apply status filter within repertorio tab
+      if (selectedStatus === "all") {
+        filtered = filtered.filter((s) => s.status === "REHEARSING" || s.status === "READY");
+      } else {
+        filtered = filtered.filter((s) => s.status === selectedStatus);
+      }
     } else if (activeTab === "sugerencias") {
       filtered = filtered.filter((s) => s.status === "PENDING");
     } else if (activeTab === "archivadas") {
       filtered = filtered.filter((s) => s.status === "ARCHIVED");
+    }
+
+    // Genre filtering
+    if (selectedGenre) {
+      filtered = filtered.filter((song) => song.genre === selectedGenre);
     }
 
     // Search filtering
@@ -166,12 +226,20 @@ export default function SongsPage() {
       filtered = filtered.filter(
         (song) =>
           song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          song.artist.toLowerCase().includes(searchQuery.toLowerCase())
+          song.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (song.genre && song.genre.toLowerCase().includes(searchQuery.toLowerCase()))
       );
     }
 
     return filtered;
-  }, [songs, activeTab, searchQuery]);
+  }, [songs, activeTab, searchQuery, selectedGenre, selectedStatus]);
+
+  // Reset status filter when changing tabs
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setSelectedStatus("all");
+    setSelectedGenre(null);
+  };
 
   // Counts for tab badges
   const repertoireCount = songs?.filter((s) => s.status === "REHEARSING" || s.status === "READY").length || 0;
@@ -181,7 +249,7 @@ export default function SongsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Hero Header with Blurred Banner Support */}
-      <header className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
+      <header data-tour="section-header" className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
         {/* Background: Either blurred banner or gradient */}
         {sectionConfig.bannerUrl ? (
           <>
@@ -258,9 +326,9 @@ export default function SongsPage() {
       </header>
 
       {/* Tabs - scrollable on mobile */}
-      <div className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
+      <div data-tour="section-tabs" className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
         <button
-          onClick={() => setActiveTab("repertorio")}
+          onClick={() => handleTabChange("repertorio")}
           className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all whitespace-nowrap shrink-0 ${
             activeTab === "repertorio"
               ? "bg-brand-blue-primary text-white"
@@ -271,10 +339,10 @@ export default function SongsPage() {
           <span className="ml-1.5 md:ml-2 px-1.5 py-0.5 text-xs rounded-full bg-white/10">{repertoireCount}</span>
         </button>
 
-        {/* Only show Sugerencias tab to admins */}
-        {canManageSongs && (
+        {/* Show Sugerencias tab to admins and members (hide from ALUMNI_GUEST only) */}
+        {canSuggestSongs && (
           <button
-            onClick={() => setActiveTab("sugerencias")}
+            onClick={() => handleTabChange("sugerencias")}
             className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all whitespace-nowrap shrink-0 ${
               activeTab === "sugerencias"
                 ? "bg-brand-blue-primary text-white"
@@ -293,7 +361,7 @@ export default function SongsPage() {
         {/* Archivadas tab - visible to all but only admins can archive */}
         {canManageSongs && (
           <button
-            onClick={() => setActiveTab("archivadas")}
+            onClick={() => handleTabChange("archivadas")}
             className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all whitespace-nowrap shrink-0 ${
               activeTab === "archivadas"
                 ? "bg-brand-blue-primary text-white"
@@ -315,6 +383,7 @@ export default function SongsPage() {
         {/* Admin: Show "Nueva Cancion" button */}
         {canManageSongs && (
           <button
+            data-tour="add-song-btn"
             onClick={() => setShowAdminModal(true)}
             className="flex items-center gap-1.5 md:gap-2 bg-brand-yellow text-brand-blue-primary px-3 md:px-4 py-2 md:py-2.5 rounded-full text-sm font-bold shadow-lg transition-bounce hover:scale-105 active:scale-95"
           >
@@ -326,6 +395,7 @@ export default function SongsPage() {
         {/* Non-admin members: Show "Sugerir" button */}
         {canSuggestSongs && !canManageSongs && (
           <button
+            data-tour="suggest-song-btn"
             onClick={() => setShowSuggestionModal(true)}
             className="flex items-center gap-1.5 md:gap-2 bg-surface-100 text-white px-3 md:px-4 py-2 md:py-2.5 rounded-full text-sm font-medium border border-surface-200 transition-smooth hover:border-white/20"
           >
@@ -385,6 +455,81 @@ export default function SongsPage() {
         </div>
       )}
 
+      {/* Status Filter - Only on repertorio tab */}
+      {activeTab === "repertorio" && (
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1">
+          <div className="flex items-center gap-1 text-gray-500 shrink-0">
+            <Filter size={14} />
+            <span className="text-xs">Estado:</span>
+          </div>
+          <button
+            onClick={() => setSelectedStatus("all")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+              selectedStatus === "all"
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setSelectedStatus("READY")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
+              selectedStatus === "READY"
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            Listas
+          </button>
+          <button
+            onClick={() => setSelectedStatus("REHEARSING")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all flex items-center gap-1.5 ${
+              selectedStatus === "REHEARSING"
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Ensayando
+          </button>
+        </div>
+      )}
+
+      {/* Genre Filter */}
+      {availableGenres.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1">
+          <div className="flex items-center gap-1 text-gray-500 shrink-0">
+            <Filter size={14} />
+            <span className="text-xs">Género:</span>
+          </div>
+          <button
+            onClick={() => setSelectedGenre(null)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+              selectedGenre === null
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            Todos
+          </button>
+          {availableGenres.map((genre) => (
+            <button
+              key={genre}
+              onClick={() => setSelectedGenre(genre === selectedGenre ? null : genre)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+                selectedGenre === genre
+                  ? "bg-brand-yellow text-brand-blue-primary"
+                  : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Loading State */}
       {isLoading && (
         <div className="space-y-2">
@@ -411,7 +556,12 @@ export default function SongsPage() {
         <div className="space-y-1">
           {filteredSongs.map((song, idx) => (
             <div key={song.id} className="animate-fade-in" style={{ animationDelay: `${idx * 30}ms` }}>
-              <SongRow song={song} index={idx} onClick={setSelectedSong} />
+              <SongRow
+                song={song}
+                index={idx}
+                onClick={setSelectedSong}
+                dataTour={idx === 0 ? "song-row" : undefined}
+              />
             </div>
           ))}
         </div>
@@ -430,8 +580,8 @@ export default function SongsPage() {
             )}
           </div>
           <p className="text-gray-400 mb-4">
-            {searchQuery
-              ? "No se encontraron canciones"
+            {searchQuery || selectedGenre || selectedStatus !== "all"
+              ? `No se encontraron canciones${selectedStatus === "READY" ? " listas" : selectedStatus === "REHEARSING" ? " en ensayo" : ""}${selectedGenre ? ` de ${selectedGenre}` : ""}`
               : activeTab === "sugerencias"
               ? "No hay sugerencias pendientes"
               : activeTab === "archivadas"

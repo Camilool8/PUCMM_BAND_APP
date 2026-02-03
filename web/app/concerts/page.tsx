@@ -172,10 +172,19 @@ export default function ConcertsPage() {
   const concertDate = displayConcert ? new Date(displayConcert.date) : null;
   const isUpcoming = concertDate ? concertDate >= new Date() : false;
 
-  // Choose which to display
-  const gradientFrom = isConcertSelected ? (isUpcoming ? "#0033A0" : "#4B5563") : sectionGradientFrom;
-  const gradientTo = isConcertSelected ? (isUpcoming ? "#4F46E5" : "#374151") : sectionGradientTo;
-  const bannerUrl = conciertosSection?.bannerUrl;
+  // Event theming from selected concert
+  const concertEventBanner = displayConcert?.event?.bannerUrl;
+  const concertEventGradientFrom = displayConcert?.event?.iconGradientFrom;
+  const concertEventGradientTo = displayConcert?.event?.iconGradientTo;
+
+  // Choose which to display - inherit from event when concert is selected
+  const gradientFrom = isConcertSelected
+    ? getColor(concertEventGradientFrom || null) || (isUpcoming ? "#0033A0" : "#4B5563")
+    : sectionGradientFrom;
+  const gradientTo = isConcertSelected
+    ? getColor(concertEventGradientTo || null) || (isUpcoming ? "#4F46E5" : "#374151")
+    : sectionGradientTo;
+  const bannerUrl = isConcertSelected ? concertEventBanner : conciertosSection?.bannerUrl;
 
   const headerTitle = isConcertSelected
     ? concertDate?.toLocaleDateString("es-DO", {
@@ -193,9 +202,9 @@ export default function ConcertsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Dynamic Hero Header */}
-      <header className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
-        {/* Banner background */}
-        {bannerUrl && !isConcertSelected && (
+      <header data-tour="concerts-header" className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
+        {/* Banner background - shows for section or inherited from event */}
+        {bannerUrl && (
           <>
             <div
               className="absolute inset-0"
@@ -210,8 +219,8 @@ export default function ConcertsPage() {
           </>
         )}
 
-        {/* Gradient background (no banner or concert selected) */}
-        {(!bannerUrl || isConcertSelected) && (
+        {/* Gradient background (no banner) */}
+        {!bannerUrl && (
           <div
             className="absolute inset-0"
             style={{
@@ -229,10 +238,10 @@ export default function ConcertsPage() {
               background: `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
             }}
           >
-            {isConcertSelected ? (
-              <Calendar size={48} className="text-white/90 md:w-16 md:h-16" />
-            ) : bannerUrl ? (
+            {bannerUrl ? (
               <img src={bannerUrl} alt={headerTitle || ""} className="w-full h-full object-cover" />
+            ) : isConcertSelected ? (
+              <Calendar size={48} className="text-white/90 md:w-16 md:h-16" />
             ) : (
               <SectionIcon size={48} className="text-white/90 md:w-16 md:h-16" />
             )}
@@ -277,7 +286,7 @@ export default function ConcertsPage() {
       </header>
 
       {/* Tabs - scrollable on mobile */}
-      <div className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
+      <div data-tour="concerts-tabs" className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
         {/* "Todos" tab */}
         <button
           onClick={() => setActiveTab("todos")}
@@ -444,6 +453,7 @@ export default function ConcertsPage() {
                   <div
                     key={concert.id}
                     onClick={() => handleConcertClick(concert)}
+                    data-tour={idx === 0 ? "concert-card" : undefined}
                     className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-surface-100/30 border border-surface-200/30 hover:border-white/10 transition-all cursor-pointer group animate-fade-in"
                     style={{ animationDelay: `${idx * 30}ms` }}
                   >

@@ -192,7 +192,7 @@ export default function CreateEventModal({ isOpen, onClose, editEvent }: CreateE
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">
-      <form onSubmit={handleSubmit} className="flex flex-col">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <Modal.Header
           icon={<Calendar size={24} />}
           subtitle={isEditing ? "Modificar los detalles del evento" : "Crear un nuevo evento para la banda"}

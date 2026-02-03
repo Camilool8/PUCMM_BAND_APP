@@ -23,12 +23,27 @@ export interface UpdateProfileDto {
   bio?: string;
 }
 
+export interface SongVoter {
+  id: string;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+export interface SongEvent {
+  id: string;
+  name: string;
+  iconName: string | null;
+  gradientFrom?: string | null;
+  iconGradientFrom?: string | null;
+}
+
 export interface Song {
   id: string;
   title: string;
   artist: string;
   bpm: number | null;
   key: string | null;
+  genre: string | null;
   status: "PENDING" | "REHEARSING" | "READY" | "ARCHIVED";
   coverUrl: string | null;
   durationMs: number | null;
@@ -46,8 +61,29 @@ export interface Song {
     avatarUrl: string | null;
   } | null;
   suggestedById?: string | null;
+  // Lead vocals
+  leadVocals?: SongVoter[];
+  // Events this song belongs to
+  eventSongs?: { event: SongEvent }[];
+  // Votes
+  votes?: { userId: string; user: SongVoter }[];
+  _count?: {
+    votes: number;
+  };
   // Optional relations
   assets?: Asset[];
+}
+
+export interface DuplicateCheckResult {
+  isDuplicate: boolean;
+  existingSong?: {
+    id: string;
+    title: string;
+    artist: string;
+    coverUrl: string | null;
+    status: SongStatus;
+  };
+  matchedBy?: "isrc" | "title_artist";
 }
 
 export type SongStatus = "PENDING" | "REHEARSING" | "READY" | "ARCHIVED";
@@ -57,6 +93,7 @@ export interface CreateSongDto {
   artist: string;
   bpm?: number;
   key?: string;
+  genre?: string;
   isrc?: string;
   coverUrl?: string;
   durationMs?: number;
@@ -72,6 +109,7 @@ export interface UpdateSongDto {
   artist?: string;
   bpm?: number;
   key?: string;
+  genre?: string;
   status?: SongStatus;
   isrc?: string;
   coverUrl?: string;
@@ -255,6 +293,7 @@ export interface SongMetadata {
   durationMs?: number;
   bpm?: number;
   key?: string;
+  genre?: string;
   releaseDate?: string;
   isrc?: string;
   spotifyId?: string;
@@ -333,6 +372,43 @@ class ApiClient {
 
   async deleteSong(id: string): Promise<void> {
     await this.request(`/songs/${id}`, { method: "DELETE" });
+  }
+
+  // Song Voting
+  async voteSong(songId: string): Promise<{ voteCount: number }> {
+    return this.request<{ voteCount: number }>(`/songs/${songId}/vote`, {
+      method: "POST",
+    });
+  }
+
+  async unvoteSong(songId: string): Promise<{ voteCount: number }> {
+    return this.request<{ voteCount: number }>(`/songs/${songId}/vote`, {
+      method: "DELETE",
+    });
+  }
+
+  async getMyVotes(): Promise<string[]> {
+    return this.request<string[]>("/songs/my-votes");
+  }
+
+  // Song Lead Vocals
+  async addLeadVocal(songId: string, userId: string): Promise<Song> {
+    return this.request<Song>(`/songs/${songId}/lead-vocals/${userId}`, {
+      method: "POST",
+    });
+  }
+
+  async removeLeadVocal(songId: string, userId: string): Promise<Song> {
+    return this.request<Song>(`/songs/${songId}/lead-vocals/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Duplicate Detection
+  async checkDuplicate(title: string, artist: string, isrc?: string): Promise<DuplicateCheckResult> {
+    const params = new URLSearchParams({ title, artist });
+    if (isrc) params.append("isrc", isrc);
+    return this.request<DuplicateCheckResult>(`/songs/check-duplicate?${params}`);
   }
 
   // Users
