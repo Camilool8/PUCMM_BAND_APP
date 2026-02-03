@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SongsService {
   constructor(private prisma: PrismaService) {}
 
-  create(createSongDto: CreateSongDto) {
+  create(createSongDto: CreateSongDto, suggestedById?: string) {
     return this.prisma.song.create({
       data: {
         title: createSongDto.title,
@@ -15,7 +15,19 @@ export class SongsService {
         bpm: createSongDto.bpm,
         key: createSongDto.key,
         isrc: createSongDto.isrc,
-        status: createSongDto.status, // Will default to PENDING if not provided
+        coverUrl: createSongDto.coverUrl,
+        durationMs: createSongDto.durationMs,
+        releaseDate: createSongDto.releaseDate ? new Date(createSongDto.releaseDate) : undefined,
+        status: createSongDto.status,
+        spotifyUrl: createSongDto.spotifyUrl,
+        youtubeUrl: createSongDto.youtubeUrl,
+        appleMusicUrl: createSongDto.appleMusicUrl,
+        suggestedBy: suggestedById ? { connect: { id: suggestedById } } : undefined,
+      },
+      include: {
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
       },
     });
   }
@@ -23,13 +35,24 @@ export class SongsService {
   findAll() {
     return this.prisma.song.findMany({
       orderBy: { updatedAt: 'desc' },
+      include: {
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+      },
     });
   }
 
   findOne(id: string) {
     return this.prisma.song.findUnique({
       where: { id },
-      include: { versions: true, assets: true },
+      include: {
+        versions: true,
+        assets: true,
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+      },
     });
   }
 

@@ -9,6 +9,8 @@ import { UsersModule } from './users/users.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { RepertoireSectionsModule } from './repertoire-sections/repertoire-sections.module';
 import { EventsModule } from './events/events.module';
+import { ConcertsModule } from './concerts/concerts.module';
+import { MusicMetadataModule } from './music-metadata/music-metadata.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { EventsModule } from './events/events.module';
     UploadsModule,
     RepertoireSectionsModule,
     EventsModule,
+    ConcertsModule,
+    MusicMetadataModule,
   ],
   controllers: [AppController],
   providers: [AppService],

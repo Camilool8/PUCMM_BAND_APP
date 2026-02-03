@@ -56,17 +56,18 @@ export default function AuthGuard({ children }: AuthGuardProps) {
               className="w-full bg-brand-blue-primary hover:bg-brand-blue-hover text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-900/50"
             >
               <LogIn size={20} />
-              Iniciar Sesión con Azure AD
+              Iniciar Sesión con Correo Estudiantil
             </button>
 
             <p className="text-xs text-gray-500 text-center mt-4">
-              Solo usuarios con correo <span className="text-brand-yellow">@ce.pucmm.edu.do</span>
+              Solo usuarios con correo{" "}
+              <span className="text-brand-yellow">@ce.pucmm.edu.do</span>
             </p>
           </div>
 
           {/* Footer */}
           <p className="text-center text-gray-600 text-xs mt-8">
-            Sistema Integral de Gestión de Repertorio
+            Sistema de Gestión de Repertorio Musical
             <br />
             Banda Universitaria PUCMM
           </p>

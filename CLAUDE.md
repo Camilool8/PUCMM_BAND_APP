@@ -80,6 +80,18 @@ src/
 │   ├── repertoire-sections.service.ts
 │   └── dto/
 │       └── update-section.dto.ts
+├── events/                  # Events CRUD (recurring event types)
+│   ├── events.controller.ts # GET/POST/PATCH/DELETE + song management
+│   ├── events.service.ts
+│   └── dto/
+│       ├── create-event.dto.ts
+│       └── update-event.dto.ts
+├── concerts/                # Concerts CRUD (performance dates)
+│   ├── concerts.controller.ts # GET/POST/PATCH/DELETE + setlist + copy-from-event
+│   ├── concerts.service.ts    # Transforms songsPlayed → songs for frontend
+│   └── dto/
+│       ├── create-concert.dto.ts
+│       └── update-concert.dto.ts
 ├── app.module.ts            # Root module with ConfigModule
 └── main.ts                  # Bootstrap with CORS + static files
 ```
@@ -95,6 +107,8 @@ Key patterns:
 ```
 app/                         # App Router pages
 ├── songs/page.tsx           # Repertoire with dynamic section headers
+├── events/page.tsx          # Events with tabs per event + EventContent
+├── concerts/page.tsx        # Concerts with upcoming/past/detail tabs
 ├── page.tsx                 # Dashboard home
 └── globals.css              # Design tokens
 components/
@@ -106,11 +120,18 @@ components/
 ├── UserProfileModal.tsx     # Profile editing
 ├── SectionSettingsModal.tsx # Section customization
 ├── AdminUsersModal.tsx      # User management
+├── EventRow.tsx             # Event list item with icon
+├── EventContent.tsx         # Event detail with setlist + concerts list
+├── CreateEventModal.tsx     # Event create/edit form
+├── ConcertContent.tsx       # Concert detail with setlist management
+├── CreateConcertModal.tsx   # Concert create/edit form
 └── ...
 hooks/
 ├── use-songs.ts             # TanStack Query for songs
 ├── use-users.ts             # TanStack Query for users + useUpdateProfile
 ├── use-sections.ts          # TanStack Query for repertoire sections
+├── use-events.ts            # TanStack Query for events + song management
+├── use-concerts.ts          # TanStack Query for concerts + setlist
 ├── use-upload.ts            # File upload with progress
 └── use-auth.ts              # Auth state + permission flags
 lib/
@@ -146,6 +167,7 @@ providers/
 const {
   canManageUsers,    // SUPERADMIN only
   canManageSongs,    // SUPERADMIN or SECTION_LEADER
+  canManageEvents,   // SUPERADMIN or SECTION_LEADER - events/concerts CRUD
   canSuggestSongs,   // SUPERADMIN, SECTION_LEADER, or MEMBER
   canEditProfile,    // SUPERADMIN, SECTION_LEADER, or MEMBER (not ALUMNI_GUEST)
   isAdmin            // SUPERADMIN or SECTION_LEADER
@@ -155,6 +177,11 @@ const {
 @Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
 @Patch(':key')
 updateSection() { ... }
+
+// Concerts use the same roles
+@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+@Post()
+createConcert() { ... }
 ```
 
 ## Design System
@@ -265,6 +292,10 @@ const response = await upload(file);
 const { data: songs, isLoading, error } = useSongs();
 const { data: sections } = useSections();
 const { data: users } = useUsers();  // SUPERADMIN only
+const { data: events } = useEvents();
+const { data: event } = useEvent(eventId);  // With full relations
+const { data: concerts } = useConcerts();
+const { data: concert } = useConcert(concertId);  // With songs
 
 // Mutations
 const createSong = useCreateSong();
@@ -274,6 +305,18 @@ const updateSection = useUpdateSection();
 await createSong.mutateAsync({ title: "Song", artist: "Artist" });
 await updateProfile.mutateAsync({ name: "New Name", instruments: ["Piano"] });
 await updateSection.mutateAsync({ key: "repertorio", data: { title: "New Title" } });
+
+// Events mutations
+const createEvent = useCreateEvent();
+const addSongToEvent = useAddSongToEvent();
+await createEvent.mutateAsync({ name: "Navidad 2024", type: "Navidad" });
+await addSongToEvent.mutateAsync({ eventId, songId });
+
+// Concerts mutations
+const createConcert = useCreateConcert();
+const copySongs = useCopyEventSongsToConcert();
+await createConcert.mutateAsync({ eventId, date: new Date().toISOString(), location: "Auditorio" });
+await copySongs.mutateAsync(concertId);  // Copy all songs from parent event
 ```
 
 ### API Client
@@ -370,5 +413,47 @@ The `prisma/seed.ts` file creates:
    - `repertorio`: "Repertorio Activo" (Library icon, blue gradient)
    - `sugerencias`: "Sugerencias Pendientes" (Clock icon, amber gradient)
    - `archivadas`: "Archivo" (Archive icon, gray gradient)
+   - `eventos`: "Eventos" (Calendar icon, blue gradient)
+   - `conciertos`: "Conciertos" (Users icon, purple/pink gradient)
 
 Run with: `npx prisma db seed`
+
+## Events & Concerts Architecture
+
+### Events
+- Recurring event types (e.g., "Navidad", "Graduación", "Extracurricular")
+- Have their own setlist (songs planned for the event)
+- Contain multiple concerts (specific performance dates)
+- Customizable appearance (iconName, bannerUrl, gradients)
+- Accessed via `/events` page with tabs per event
+
+### Concerts
+- Specific performance dates within an Event
+- Have their own setlist (can differ from event's planned songs)
+- Can copy songs from parent event with one click
+- Support location, notes, upcoming/past categorization
+- Accessed via `/concerts` page with tabs: Todos, Próximos, Pasados
+- Direct navigation from events: clicking a concert navigates to `/concerts?concert={id}`
+
+### Data Flow
+```
+Event (Navidad 2024)
+├── Planned Songs [songA, songB, songC]
+├── Concert (Dec 15, 2024 @ Auditorio)
+│   └── Actual Setlist [songA, songC]  ← Can copy from event or customize
+└── Concert (Dec 22, 2024 @ Teatro)
+    └── Actual Setlist [songA, songB, songD]
+```
+
+### Backend Transform Pattern
+The concerts service transforms Prisma's `songsPlayed` relation to `songs` for frontend consistency:
+```typescript
+private transformConcert(concert: any) {
+  const { songsPlayed, _count, ...rest } = concert;
+  return {
+    ...rest,
+    songs: songsPlayed || [],
+    _count: _count ? { songs: _count.songsPlayed } : undefined,
+  };
+}
+```

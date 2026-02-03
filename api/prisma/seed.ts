@@ -56,6 +56,28 @@ async function main() {
       iconGradientFrom: 'gray-500',
       iconGradientTo: 'gray-700',
     },
+    {
+      key: 'eventos',
+      title: 'Eventos',
+      subtitle: 'Gestiona los eventos y conciertos de la banda',
+      iconName: 'Calendar',
+      gradientFrom: 'brand-blue-primary/40',
+      gradientVia: 'indigo-600/20',
+      gradientTo: 'transparent',
+      iconGradientFrom: 'brand-blue-primary',
+      iconGradientTo: 'indigo-600',
+    },
+    {
+      key: 'conciertos',
+      title: 'Conciertos',
+      subtitle: 'Historial de presentaciones y próximos conciertos',
+      iconName: 'Users',
+      gradientFrom: 'purple-600/40',
+      gradientVia: 'pink-500/20',
+      gradientTo: 'transparent',
+      iconGradientFrom: 'purple-600',
+      iconGradientTo: 'pink-500',
+    },
   ];
 
   for (const section of defaultSections) {

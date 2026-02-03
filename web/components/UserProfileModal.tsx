@@ -187,7 +187,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               {instruments.map((instrument) => (
                 <span
                   key={instrument}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-brand-blue-primary/20 text-brand-blue-primary border border-brand-blue-primary/30 rounded-full text-sm font-medium"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-brand-blue-primary text-white border border-brand-blue-primary rounded-full text-sm font-medium"
                 >
                   {instrument}
                   {canEditProfile && (

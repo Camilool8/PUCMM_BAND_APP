@@ -32,8 +32,22 @@ export interface Song {
   status: "PENDING" | "REHEARSING" | "READY" | "ARCHIVED";
   coverUrl: string | null;
   durationMs: number | null;
+  releaseDate: string | null;
+  isrc: string | null;
+  // Music platform links
+  spotifyUrl: string | null;
+  youtubeUrl: string | null;
+  appleMusicUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  suggestedBy?: {
+    id: string;
+    name: string | null;
+    avatarUrl: string | null;
+  } | null;
+  suggestedById?: string | null;
+  // Optional relations
+  assets?: Asset[];
 }
 
 export type SongStatus = "PENDING" | "REHEARSING" | "READY" | "ARCHIVED";
@@ -44,7 +58,13 @@ export interface CreateSongDto {
   bpm?: number;
   key?: string;
   isrc?: string;
-  status?: SongStatus; // Allow admins to set initial status
+  coverUrl?: string;
+  durationMs?: number;
+  releaseDate?: string;
+  status?: SongStatus;
+  spotifyUrl?: string;
+  youtubeUrl?: string;
+  appleMusicUrl?: string;
 }
 
 export interface UpdateSongDto {
@@ -53,6 +73,13 @@ export interface UpdateSongDto {
   bpm?: number;
   key?: string;
   status?: SongStatus;
+  isrc?: string;
+  coverUrl?: string;
+  durationMs?: number;
+  releaseDate?: string;
+  spotifyUrl?: string;
+  youtubeUrl?: string;
+  appleMusicUrl?: string;
 }
 
 // ============================================================================
@@ -131,6 +158,27 @@ export interface Concert {
   eventId: string;
   createdAt: string;
   updatedAt: string;
+  // Relations
+  event?: Event;
+  songs?: Song[];
+  _count?: {
+    songs: number;
+  };
+}
+
+export interface CreateConcertDto {
+  date: string;
+  eventId: string;
+  location?: string;
+  notes?: string;
+  songIds?: string[];
+}
+
+export interface UpdateConcertDto {
+  date?: string;
+  location?: string;
+  notes?: string;
+  songIds?: string[];
 }
 
 export interface CreateEventDto {
@@ -194,6 +242,34 @@ export interface UpdateSectionDto {
   iconGradientFrom?: string;
   iconGradientTo?: string;
 }
+
+// ============================================================================
+// Music Metadata Types
+// ============================================================================
+
+export interface SongMetadata {
+  title: string;
+  artist: string;
+  album?: string;
+  coverUrl?: string;
+  durationMs?: number;
+  bpm?: number;
+  key?: string;
+  releaseDate?: string;
+  isrc?: string;
+  spotifyId?: string;
+  youtubeId?: string;
+  appleMusicId?: string;
+  previewUrl?: string;
+}
+
+export interface ResolveLinkResponse {
+  success: boolean;
+  metadata?: SongMetadata;
+  error?: string;
+}
+
+export type MusicPlatform = 'spotify' | 'youtube' | 'apple_music' | 'unknown';
 
 class ApiClient {
   private baseUrl: string;
@@ -425,6 +501,108 @@ class ApiClient {
   async removeSongFromEvent(eventId: string, songId: string): Promise<Event> {
     return this.request<Event>(`/events/${eventId}/songs/${songId}`, {
       method: "DELETE",
+    });
+  }
+
+  async reorderEventSongs(eventId: string, songIds: string[]): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/songs/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ songIds }),
+    });
+  }
+
+  // ============================================================================
+  // Concerts
+  // ============================================================================
+
+  async getConcerts(): Promise<Concert[]> {
+    return this.request<Concert[]>("/concerts");
+  }
+
+  async getConcertsByEvent(eventId: string): Promise<Concert[]> {
+    return this.request<Concert[]>(`/concerts/event/${eventId}`);
+  }
+
+  async getConcert(id: string): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${id}`);
+  }
+
+  async createConcert(data: CreateConcertDto): Promise<Concert> {
+    return this.request<Concert>("/concerts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateConcert(id: string, data: UpdateConcertDto): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteConcert(id: string): Promise<void> {
+    await this.request(`/concerts/${id}`, { method: "DELETE" });
+  }
+
+  async addSongToConcert(concertId: string, songId: string): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/songs`, {
+      method: "POST",
+      body: JSON.stringify({ songId }),
+    });
+  }
+
+  async removeSongFromConcert(concertId: string, songId: string): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/songs/${songId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async copyEventSongsToConcert(concertId: string): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/copy-from-event`, {
+      method: "POST",
+    });
+  }
+
+  async reorderConcertSongs(concertId: string, songIds: string[]): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/songs/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ songIds }),
+    });
+  }
+
+  // ============================================================================
+  // Music Metadata
+  // ============================================================================
+
+  /**
+   * Resolve a music link and fetch metadata
+   * Supports Spotify, YouTube, and Apple Music links
+   */
+  async resolveMusicLink(url: string): Promise<ResolveLinkResponse> {
+    return this.request<ResolveLinkResponse>("/music-metadata/resolve", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    });
+  }
+
+  /**
+   * Search for a song by title and artist
+   * Fallback when user doesn't have a link
+   */
+  async searchSongMetadata(title: string, artist: string): Promise<ResolveLinkResponse> {
+    return this.request<ResolveLinkResponse>(
+      `/music-metadata/search?title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`
+    );
+  }
+
+  /**
+   * Detect the platform from a URL
+   */
+  async detectMusicPlatform(url: string): Promise<{ platform: MusicPlatform; supported: boolean }> {
+    return this.request<{ platform: MusicPlatform; supported: boolean }>("/music-metadata/detect-platform", {
+      method: "POST",
+      body: JSON.stringify({ url }),
     });
   }
 }

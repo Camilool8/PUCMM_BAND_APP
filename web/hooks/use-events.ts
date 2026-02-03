@@ -100,3 +100,19 @@ export function useRemoveSongFromEvent() {
     },
   });
 }
+
+export function useReorderEventSongs() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ eventId, songIds }: { eventId: string; songIds: string[] }) =>
+      api.reorderEventSongs(eventId, songIds),
+    onSuccess: (_, { eventId }) => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["events", eventId] });
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}

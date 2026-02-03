@@ -7,31 +7,54 @@ import { UpdateEventDto } from './dto/update-event.dto';
 export class EventsService {
   constructor(private prisma: PrismaService) {}
 
+  // Transform event to include songs array from eventSongs junction
+  private transformEvent(event: any) {
+    if (!event) return event;
+    const { eventSongs, _count, ...rest } = event;
+    return {
+      ...rest,
+      songs: eventSongs?.map((es: any) => es.song) || [],
+      _count: _count
+        ? { songs: _count.eventSongs, concerts: _count.concerts }
+        : undefined,
+    };
+  }
+
   async create(createEventDto: CreateEventDto) {
     const { songIds, ...eventData } = createEventDto;
 
-    return this.prisma.event.create({
+    const event = await this.prisma.event.create({
       data: {
         ...eventData,
-        songs: songIds?.length
-          ? { connect: songIds.map((id) => ({ id })) }
+        eventSongs: songIds?.length
+          ? {
+              create: songIds.map((songId, index) => ({
+                songId,
+                order: index,
+              })),
+            }
           : undefined,
       },
       include: {
-        songs: true,
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
+        },
         concerts: true,
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
       },
     });
+
+    return this.transformEvent(event);
   }
 
   async findAll() {
-    return this.prisma.event.findMany({
+    const events = await this.prisma.event.findMany({
       include: {
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
         concerts: {
           orderBy: { date: 'asc' },
@@ -41,20 +64,29 @@ export class EventsService {
       },
       orderBy: { updatedAt: 'desc' },
     });
+
+    return events.map((event) => ({
+      ...event,
+      _count: {
+        songs: event._count.eventSongs,
+        concerts: event._count.concerts,
+      },
+    }));
   }
 
   async findOne(id: string) {
     const event = await this.prisma.event.findUnique({
       where: { id },
       include: {
-        songs: {
-          orderBy: { title: 'asc' },
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
         },
         concerts: {
           orderBy: { date: 'asc' },
         },
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
       },
     });
@@ -63,7 +95,7 @@ export class EventsService {
       throw new NotFoundException(`Evento con ID ${id} no encontrado`);
     }
 
-    return event;
+    return this.transformEvent(event);
   }
 
   async update(id: string, updateEventDto: UpdateEventDto) {
@@ -72,23 +104,34 @@ export class EventsService {
     // Check if event exists
     await this.findOne(id);
 
-    return this.prisma.event.update({
+    // If songIds provided, recreate all eventSongs with order
+    if (songIds !== undefined) {
+      await this.prisma.eventSong.deleteMany({ where: { eventId: id } });
+      await this.prisma.eventSong.createMany({
+        data: songIds.map((songId, index) => ({
+          eventId: id,
+          songId,
+          order: index,
+        })),
+      });
+    }
+
+    const event = await this.prisma.event.update({
       where: { id },
-      data: {
-        ...eventData,
-        // If songIds is provided, replace all song connections
-        songs: songIds !== undefined
-          ? { set: songIds.map((id) => ({ id })) }
-          : undefined,
-      },
+      data: eventData,
       include: {
-        songs: true,
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
+        },
         concerts: true,
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
       },
     });
+
+    return this.transformEvent(event);
   }
 
   async remove(id: string) {
@@ -110,35 +153,97 @@ export class EventsService {
       throw new NotFoundException(`Cancion con ID ${songId} no encontrada`);
     }
 
-    return this.prisma.event.update({
-      where: { id: eventId },
+    // Get current max order
+    const maxOrder = await this.prisma.eventSong.aggregate({
+      where: { eventId },
+      _max: { order: true },
+    });
+
+    // Create junction record with next order
+    await this.prisma.eventSong.create({
       data: {
-        songs: { connect: { id: songId } },
+        eventId,
+        songId,
+        order: (maxOrder._max.order ?? -1) + 1,
       },
+    });
+
+    // Return updated event
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
       include: {
-        songs: true,
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
+        },
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
       },
     });
+
+    return this.transformEvent(event);
   }
 
   async removeSong(eventId: string, songId: string) {
     // Check if event exists
     await this.findOne(eventId);
 
-    return this.prisma.event.update({
-      where: { id: eventId },
-      data: {
-        songs: { disconnect: { id: songId } },
+    // Delete the junction record
+    await this.prisma.eventSong.delete({
+      where: {
+        eventId_songId: { eventId, songId },
       },
+    });
+
+    // Return updated event
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
       include: {
-        songs: true,
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
+        },
         _count: {
-          select: { songs: true, concerts: true },
+          select: { eventSongs: true, concerts: true },
         },
       },
     });
+
+    return this.transformEvent(event);
+  }
+
+  async reorderSongs(eventId: string, songIds: string[]) {
+    // Check if event exists
+    await this.findOne(eventId);
+
+    // Update order for each song
+    await Promise.all(
+      songIds.map((songId, index) =>
+        this.prisma.eventSong.update({
+          where: {
+            eventId_songId: { eventId, songId },
+          },
+          data: { order: index },
+        }),
+      ),
+    );
+
+    // Return updated event
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        eventSongs: {
+          include: { song: true },
+          orderBy: { order: 'asc' },
+        },
+        concerts: true,
+        _count: {
+          select: { eventSongs: true, concerts: true },
+        },
+      },
+    });
+
+    return this.transformEvent(event);
   }
 }

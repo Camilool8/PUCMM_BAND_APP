@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, Calendar, Users, User } from "lucide-react";
+import { Home, Music, Calendar, Users, User, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
@@ -18,6 +18,7 @@ export default function BottomNav() {
     { href: "/", icon: Home, label: "Inicio" },
     { href: "/songs", icon: Music, label: "Repertorio" },
     { href: "/events", icon: Calendar, label: "Eventos" },
+    { href: "/concerts", icon: Ticket, label: "Conciertos" },
   ];
 
   return (

@@ -2,10 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { useEvents, useEvent } from "@/hooks/use-events";
+import { useSection } from "@/hooks/use-sections";
 import { useAuth } from "@/hooks/use-auth";
 import EventRow from "@/components/EventRow";
 import EventDetailModal from "@/components/EventDetailModal";
 import CreateEventModal from "@/components/CreateEventModal";
+import SectionSettingsModal from "@/components/SectionSettingsModal";
 import EventContent from "@/components/EventContent";
 import {
   Plus,
@@ -22,6 +24,9 @@ import {
   Heart,
   Zap,
   Music,
+  Library,
+  Clock,
+  Archive,
   type LucideIcon,
 } from "lucide-react";
 import type { Event } from "@/lib/api";
@@ -37,6 +42,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Star,
   Heart,
   Zap,
+  Library,
+  Clock,
+  Archive,
+  LayoutGrid,
 };
 
 // Color mapping from Tailwind class names to hex values
@@ -54,6 +63,9 @@ const COLOR_MAP: Record<string, string> = {
   "emerald-500": "#10B981",
   "teal-600": "#0D9488",
   "pink-500": "#EC4899",
+  "gray-500": "#6B7280",
+  "gray-600": "#4B5563",
+  "gray-700": "#374151",
 };
 
 const getColor = (colorName: string | null): string => {
@@ -70,8 +82,10 @@ export default function EventsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editEvent, setEditEvent] = useState<Event | null>(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [showSectionSettings, setShowSectionSettings] = useState(false);
 
   const { data: events, isLoading, error } = useEvents();
+  const { data: eventosSection } = useSection("eventos");
   const { canManageEvents } = useAuth();
 
   // Get selected event from tab
@@ -115,22 +129,42 @@ export default function EventsPage() {
   };
 
   // Dynamic header content based on selected tab
-  const headerIcon = displayEvent?.iconName ? ICON_MAP[displayEvent.iconName] : Calendar;
-  const HeaderIcon = headerIcon || Calendar;
-  const gradientFrom = getColor(displayEvent?.iconGradientFrom || null);
-  const gradientTo = getColor(displayEvent?.iconGradientTo || null);
+  // If "todos", use eventosSection data; otherwise use selected event data
+  const isEventSelected = !!displayEvent;
+
+  // Section header (for "todos" tab)
+  const sectionIcon = eventosSection?.iconName ? ICON_MAP[eventosSection.iconName] : Calendar;
+  const SectionIcon = sectionIcon || Calendar;
+  const sectionGradientFrom = getColor(eventosSection?.iconGradientFrom || null);
+  const sectionGradientTo = getColor(eventosSection?.iconGradientTo || null);
+
+  // Event header (for specific event tab)
+  const eventIcon = displayEvent?.iconName ? ICON_MAP[displayEvent.iconName] : Calendar;
+  const EventIcon = eventIcon || Calendar;
+  const eventGradientFrom = getColor(displayEvent?.iconGradientFrom || null);
+  const eventGradientTo = getColor(displayEvent?.iconGradientTo || null);
+
+  // Choose which to display
+  const HeaderIcon = isEventSelected ? EventIcon : SectionIcon;
+  const gradientFrom = isEventSelected ? eventGradientFrom : sectionGradientFrom;
+  const gradientTo = isEventSelected ? eventGradientTo : sectionGradientTo;
+  const bannerUrl = isEventSelected ? displayEvent?.bannerUrl : eventosSection?.bannerUrl;
+  const headerTitle = isEventSelected ? displayEvent?.name : (eventosSection?.title || "Eventos");
+  const headerSubtitle = isEventSelected
+    ? (displayEvent?.description || `${displayEvent?.songs?.length || displayEvent?._count?.songs || 0} canciones • ${displayEvent?.concerts?.length || displayEvent?._count?.concerts || 0} conciertos`)
+    : (eventosSection?.subtitle || `Gestiona los eventos y conciertos de la banda • ${events?.length || 0} eventos`);
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Dynamic Hero Header */}
       <header className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
-        {/* Banner background (if event has banner) */}
-        {displayEvent?.bannerUrl && (
+        {/* Banner background */}
+        {bannerUrl && (
           <>
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: `url(${displayEvent.bannerUrl})`,
+                backgroundImage: `url(${bannerUrl})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -141,13 +175,11 @@ export default function EventsPage() {
         )}
 
         {/* Gradient background (no banner) */}
-        {!displayEvent?.bannerUrl && (
+        {!bannerUrl && (
           <div
             className="absolute inset-0"
             style={{
-              background: displayEvent
-                ? `linear-gradient(to bottom, ${gradientFrom}80, ${gradientTo}40, transparent)`
-                : "linear-gradient(to bottom, rgba(0, 51, 160, 0.5), rgba(79, 70, 229, 0.2), transparent)",
+              background: `linear-gradient(to bottom, ${gradientFrom}80, ${gradientTo}40, transparent)`,
             }}
           />
         )}
@@ -158,13 +190,11 @@ export default function EventsPage() {
           <div
             className="w-20 h-20 md:w-36 md:h-36 shrink-0 rounded-xl md:rounded-2xl shadow-2xl flex items-center justify-center border border-white/10 overflow-hidden"
             style={{
-              background: displayEvent
-                ? `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`
-                : "linear-gradient(to bottom right, #0033A0, #4F46E5)",
+              background: `linear-gradient(to bottom right, ${gradientFrom}, ${gradientTo})`,
             }}
           >
-            {displayEvent?.bannerUrl ? (
-              <img src={displayEvent.bannerUrl} alt={displayEvent.name} className="w-full h-full object-cover" />
+            {bannerUrl ? (
+              <img src={bannerUrl} alt={headerTitle || ""} className="w-full h-full object-cover" />
             ) : (
               <HeaderIcon size={48} className="text-white/90 md:w-16 md:h-16" />
             )}
@@ -173,22 +203,20 @@ export default function EventsPage() {
           {/* Info */}
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-xs md:text-sm font-medium text-white/60 uppercase tracking-wider mb-1">
-              {displayEvent ? "Evento" : "PUCMM Band"}
+              {isEventSelected ? "Evento" : "PUCMM Band"}
             </p>
             <h1 className="text-xl md:text-4xl font-black text-white truncate">
-              {displayEvent?.name || "Eventos"}
+              {headerTitle}
             </h1>
             <p className="text-sm text-gray-300 mt-1 hidden md:block">
-              {displayEvent
-                ? displayEvent.description || `${displayEvent.songs?.length || displayEvent._count?.songs || 0} canciones • ${displayEvent.concerts?.length || displayEvent._count?.concerts || 0} conciertos`
-                : `Gestiona los eventos y conciertos de la banda • ${events?.length || 0} eventos`}
+              {headerSubtitle}
             </p>
           </div>
 
-          {/* Edit button for event (admin only) */}
-          {displayEvent && canManageEvents && (
+          {/* Settings button */}
+          {canManageEvents && (
             <button
-              onClick={() => handleEdit(displayEvent)}
+              onClick={() => isEventSelected ? handleEdit(displayEvent!) : setShowSectionSettings(true)}
               className="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all"
             >
               <Settings size={18} className="md:w-5 md:h-5" />
@@ -234,11 +262,11 @@ export default function EventsPage() {
               {event.name}
               {(event._count?.songs || 0) > 0 && (
                 <span
-                  className="ml-1 px-1.5 py-0.5 text-xs rounded-full"
-                  style={{
-                    backgroundColor: isActive ? "rgba(255,255,255,0.2)" : `${iconColor}30`,
-                    color: isActive ? "white" : iconColor,
-                  }}
+                  className={`ml-1 px-1.5 py-0.5 text-xs rounded-full font-medium ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-white/10 text-gray-300"
+                  }`}
                 >
                   {event._count?.songs}
                 </span>
@@ -387,6 +415,11 @@ export default function EventsPage() {
         isOpen={showCreateModal}
         onClose={handleCloseCreate}
         editEvent={editEvent}
+      />
+      <SectionSettingsModal
+        sectionKey="eventos"
+        isOpen={showSectionSettings}
+        onClose={() => setShowSectionSettings(false)}
       />
     </div>
   );

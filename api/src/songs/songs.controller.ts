@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { SongsService } from './songs.service';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
@@ -10,8 +10,9 @@ export class SongsController {
   constructor(private readonly songsService: SongsService) {}
 
   @Post()
-  create(@Body() createSongDto: CreateSongDto) {
-    return this.songsService.create(createSongDto);
+  create(@Request() req, @Body() createSongDto: CreateSongDto) {
+    const userId = req.user?.dbUser?.id;
+    return this.songsService.create(createSongDto, userId);
   }
 
   @Get()

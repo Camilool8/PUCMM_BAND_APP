@@ -63,17 +63,22 @@ model Song {
   durationMs  Int?
   releaseDate DateTime?
   isrc        String?    @unique
-  
+
+  // Music platform links for listening
+  spotifyUrl    String?
+  youtubeUrl    String?
+  appleMusicUrl String?
+
   // Relations
   suggestedBy   User?   @relation("UserSuggestions", fields: [suggestedById], references: [id])
   suggestedById String?
-  
+
   leadVocals    User[]  @relation("SongLeadVocals")
-  
+
   versions      SongVersion[]
   tags          Tag[]
-  events        Event[]       // Planned events
-  concerts      Concert[]     @relation("ConcertSongs") // Concerts where actually played
+  eventSongs    EventSong[]    // Explicit junction for events
+  concertSongs  ConcertSong[]  // Explicit junction for concerts
   assets        Asset[]
 
   createdAt     DateTime @default(now())
@@ -108,13 +113,27 @@ model Event {
   iconGradientFrom String?  // e.g., "red-600"
   iconGradientTo   String?  // e.g., "red-700"
 
-  songs       Song[]
+  eventSongs  EventSong[]  // Explicit junction for ordering
   concerts    Concert[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@map("events")
+}
+
+// Junction table for Event-Song with ordering
+model EventSong {
+  id        String   @id @default(uuid())
+  eventId   String
+  songId    String
+  order     Int      @default(0)  // Position in setlist
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, songId])
+  @@map("event_songs")
 }
 
 model Concert {
@@ -127,8 +146,8 @@ model Concert {
   event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId     String
 
-  // Songs actually played (may differ from event's planned songs)
-  songsPlayed Song[]   @relation("ConcertSongs")
+  // Explicit junction for songs with ordering
+  concertSongs ConcertSong[]
 
   // Videos of this specific performance
   assets      Asset[]
@@ -137,6 +156,20 @@ model Concert {
   updatedAt   DateTime @updatedAt
 
   @@map("concerts")
+}
+
+// Junction table for Concert-Song with ordering
+model ConcertSong {
+  id        String   @id @default(uuid())
+  concertId String
+  songId    String
+  order     Int      @default(0)  // Position in setlist
+  concert   Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([concertId, songId])
+  @@map("concert_songs")
 }
 
 model Asset {

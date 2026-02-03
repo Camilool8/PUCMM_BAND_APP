@@ -277,7 +277,7 @@ function ModalHeader({
     >
       <div className="flex items-start gap-4 pr-8">
         {icon && (
-          <div className="shrink-0 w-12 h-12 rounded-xl bg-brand-blue-primary/20 flex items-center justify-center text-brand-blue-primary">
+          <div className="shrink-0 w-12 h-12 rounded-xl bg-brand-blue-primary flex items-center justify-center text-white">
             {icon}
           </div>
         )}

@@ -14,6 +14,7 @@ import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { AddSongDto } from './dto/add-song.dto';
+import { ReorderSongsDto } from './dto/reorder-songs.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { Role } from '@prisma/client';
 
@@ -100,5 +101,20 @@ export class EventsController {
       );
     }
     return this.eventsService.removeSong(id, songId);
+  }
+
+  @Patch(':id/songs/reorder')
+  reorderSongs(
+    @Param('id') id: string,
+    @Body() reorderSongsDto: ReorderSongsDto,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden reordenar canciones',
+      );
+    }
+    return this.eventsService.reorderSongs(id, reorderSongsDto.songIds);
   }
 }
