@@ -184,8 +184,7 @@ export default function EventClient({ eventId }: EventClientProps) {
       {/* Event Content */}
       <EventContent
         event={event}
-        onBack={() => router.push("/events")}
-        onEdit={() => setShowEditModal(true)}
+        onEdit={(_e) => setShowEditModal(true)}
       />
 
       {/* Edit Modal */}
