@@ -18,6 +18,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import { useCreateEvent, useUpdateEvent } from "@/hooks/use-events";
 import type { Event } from "@/lib/api";
+import { env } from "@/lib/env";
 
 interface CreateEventModalProps {
   isOpen: boolean;
@@ -176,7 +177,7 @@ export default function CreateEventModal({ isOpen, onClose, editEvent }: CreateE
   };
 
   const handleImageUpload = (response: { file: { url: string } }) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     setBannerUrl(fullUrl);
   };
 

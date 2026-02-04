@@ -57,6 +57,7 @@ export class UsersService {
       data: {
         name: updateProfileDto.name,
         avatarUrl: updateProfileDto.avatarUrl,
+        homeBackground: updateProfileDto.homeBackground,
         instruments: updateProfileDto.instruments,
         phone: updateProfileDto.phone,
         bio: updateProfileDto.bio,
@@ -66,6 +67,7 @@ export class UsersService {
         email: true,
         name: true,
         avatarUrl: true,
+        homeBackground: true,
         role: true,
         instruments: true,
         phone: true,

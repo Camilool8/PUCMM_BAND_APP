@@ -1,15 +1,16 @@
 import type { Configuration } from "@azure/msal-browser";
-
-// Use tenant ID if provided, otherwise use "organizations" for multi-tenant
-const authority = process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID
-  ? `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_AD_TENANT_ID}`
-  : "https://login.microsoftonline.com/organizations";
+import { env } from "./env";
 
 // Function to get config - only called on client side
 export function getMsalConfig(): Configuration {
+  const tenantId = env.azureAdTenantId;
+  const authority = tenantId
+    ? `https://login.microsoftonline.com/${tenantId}`
+    : "https://login.microsoftonline.com/organizations";
+
   return {
     auth: {
-      clientId: process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID || "",
+      clientId: env.azureAdClientId || "",
       authority,
       redirectUri: window.location.origin,
       postLogoutRedirectUri: window.location.origin,
@@ -45,6 +46,9 @@ export const loginRequest = {
   scopes: ["User.Read", "openid", "profile", "email"],
 };
 
-export const apiRequest = {
-  scopes: [`api://${process.env.NEXT_PUBLIC_AZURE_AD_CLIENT_ID}/access_as_user`],
-};
+// Function to get API request scopes - called at runtime to support Docker config
+export function getApiRequest() {
+  return {
+    scopes: [`api://${env.azureAdClientId}/access_as_user`],
+  };
+}

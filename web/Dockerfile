@@ -72,6 +72,13 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy public assets (if any)
 COPY --from=builder /app/public ./public
 
+# Copy entrypoint script
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Make public dir writable for runtime config generation
+RUN chown -R nextjs:nodejs /app/public
+
 # Set correct permissions for prerender cache
 RUN mkdir .next && chown nextjs:nodejs .next
 
@@ -94,5 +101,5 @@ ENV PORT=3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
 
-# Start the application using the standalone server
-CMD ["node", "server.js"]
+# Start the application using entrypoint (generates runtime config)
+CMD ["/app/entrypoint.sh"]

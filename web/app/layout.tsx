@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import AuthGuard from "@/components/AuthGuard";
 import DevViewToggle from "@/components/DevViewToggle";
 import WelcomeTourTrigger from "@/components/WelcomeTourTrigger";
+import HomeBackground from "@/components/HomeBackground";
 import { TourProvider, TourUI } from "@/components/tour";
 import { Providers } from "@/providers";
 
@@ -37,6 +38,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        {/* Runtime config for Docker deployments - must load before React */}
+        <script src="/config.js" />
+      </head>
       <body
         className={cn(
           inter.variable,
@@ -46,11 +51,14 @@ export default function RootLayout({
         <Providers>
           <TourProvider>
             <AuthGuard>
+              {/* Dynamic Home Background - renders via portal */}
+              <HomeBackground />
+
               {/* Desktop Sidebar */}
               <Sidebar />
 
               {/* Main Content */}
-              <main className="flex-1 md:ml-64 flex flex-col relative overflow-hidden bg-linear-to-b from-surface-100/50 to-surface-0">
+              <main className="flex-1 md:ml-64 flex flex-col relative overflow-hidden z-10">
                 <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scrollbar-hide">
                   <div className="animate-fade-in">{children}</div>
                 </div>

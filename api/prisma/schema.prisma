@@ -32,18 +32,19 @@ enum AssetType {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  name        String?
-  avatarUrl   String?  // Profile picture URL
-  role        Role     @default(MEMBER)
-  instruments String[]
-  phone       String?
-  bio         String?  // Short user bio
-  jobTitle    String?  // From Azure AD
-  department  String?  // From Azure AD
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String?
+  avatarUrl      String?  // Profile picture URL
+  homeBackground String?  // Home background: preset name (e.g., "aurora") or custom image URL
+  role           Role     @default(MEMBER)
+  instruments    String[]
+  phone          String?
+  bio            String?  // Short user bio
+  jobTitle       String?  // From Azure AD
+  department     String?  // From Azure AD
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   suggestions Song[]      @relation("UserSuggestions")
   leadVocals  Song[]      @relation("SongLeadVocals")

@@ -1,19 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Music, Calendar, Users, User, BookOpen, MoreHorizontal, X, Ticket, Settings } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTour } from "@/hooks/use-tour";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { user, canManageUsers } = useAuth();
+  const { registerModal, unregisterModal } = useTour();
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+
+  // Register profile modal for tour system (mobile)
+  useEffect(() => {
+    registerModal("profile-mobile", {
+      open: () => {
+        setShowProfileModal(true);
+      },
+      close: () => {
+        setShowProfileModal(false);
+      },
+    });
+
+    return () => {
+      unregisterModal("profile-mobile");
+    };
+  }, [registerModal, unregisterModal]);
 
   // Main navigation items - always visible
   const MAIN_NAV_ITEMS = [

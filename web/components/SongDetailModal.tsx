@@ -35,6 +35,7 @@ import { useSongAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-uploa
 import { useResolveMusicLink } from "@/hooks/use-music-metadata";
 import { isMusicLink, formatDurationFromMs } from "@/hooks/use-music-metadata";
 import type { Song, SongStatus, Asset, UploadResponse, DbUser } from "@/lib/api";
+import { env } from "@/lib/env";
 
 // Dynamic import to avoid SSR issues with react-pdf
 const PDFViewerModal = dynamic(() => import("./PDFViewerModal"), {
@@ -116,7 +117,7 @@ const STATUS_OPTIONS: {
 
 export default function SongDetailModal({ song, onClose }: SongDetailModalProps) {
   const router = useRouter();
-  const { canManageSongs } = useAuth();
+  const { canManageSongs, canUploadMedia } = useAuth();
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
   const addLeadVocal = useAddLeadVocal();
@@ -268,7 +269,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
   };
 
   const handleScoreUpload = async (response: UploadResponse) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     await createAsset.mutateAsync({
       type: "SCORE",
       url: fullUrl,
@@ -282,7 +283,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
   };
 
   const handleVideoUpload = async (response: UploadResponse) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     await createAsset.mutateAsync({
       type: "VIDEO",
       url: fullUrl,
@@ -846,8 +847,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                 </div>
               )}
 
-              {/* Upload section for admins */}
-              {canManageSongs && (
+              {/* Upload section for members+ */}
+              {canUploadMedia && (
                 <div className="pt-4 border-t border-surface-200/50 space-y-3">
                   <h4 className="text-sm font-medium text-white flex items-center gap-2">
                     <Plus size={16} />
@@ -922,8 +923,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                 </div>
               )}
 
-              {/* Upload section for admins */}
-              {canManageSongs && (
+              {/* Upload section for members+ */}
+              {canUploadMedia && (
                 <div className="pt-4 border-t border-surface-200/50 space-y-3">
                   <h4 className="text-sm font-medium text-white flex items-center gap-2">
                     <Plus size={16} />

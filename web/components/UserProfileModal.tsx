@@ -10,13 +10,22 @@ import {
   X,
   Check,
   Plus,
+  Palette,
+  ImagePlus,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import { useAuth } from "@/hooks/use-auth";
 import { useUpdateProfile } from "@/hooks/use-users";
 import { useUpload } from "@/hooks/use-upload";
+import {
+  BACKGROUND_PRESETS,
+  DEFAULT_BACKGROUND_ID,
+  isCustomImageBackground,
+  isPresetBackground,
+} from "@/lib/background-presets";
 import type { UploadResponse } from "@/lib/api";
+import { env } from "@/lib/env";
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -50,17 +59,20 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   // Form state
   const [name, setName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [homeBackground, setHomeBackground] = useState<string | null>(null);
   const [instruments, setInstruments] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [customInstrument, setCustomInstrument] = useState("");
   const [showUploader, setShowUploader] = useState(false);
+  const [showBackgroundUploader, setShowBackgroundUploader] = useState(false);
 
   // Initialize form with current user data
   useEffect(() => {
     if (dbUser) {
       setName(dbUser.name || "");
       setAvatarUrl(dbUser.avatarUrl || null);
+      setHomeBackground(dbUser.homeBackground || null);
       setInstruments(dbUser.instruments || []);
       setPhone(dbUser.phone || "");
       setBio(dbUser.bio || "");
@@ -68,9 +80,20 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   }, [dbUser]);
 
   const handleAvatarUpload = (response: UploadResponse) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     setAvatarUrl(fullUrl);
     setShowUploader(false);
+  };
+
+  const handleBackgroundUpload = (response: UploadResponse) => {
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
+    setHomeBackground(fullUrl);
+    setShowBackgroundUploader(false);
+  };
+
+  const handleSelectPreset = (presetId: string) => {
+    setHomeBackground(presetId);
+    setShowBackgroundUploader(false);
   };
 
   const handleToggleInstrument = (instrument: string) => {
@@ -92,6 +115,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
     await updateProfile.mutateAsync({
       name: name || undefined,
       avatarUrl: avatarUrl || undefined,
+      homeBackground: homeBackground || undefined,
       instruments,
       phone: phone || undefined,
       bio: bio || undefined,
@@ -102,6 +126,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const hasChanges =
     name !== (dbUser?.name || "") ||
     avatarUrl !== (dbUser?.avatarUrl || null) ||
+    homeBackground !== (dbUser?.homeBackground || null) ||
     JSON.stringify(instruments) !== JSON.stringify(dbUser?.instruments || []) ||
     phone !== (dbUser?.phone || "") ||
     bio !== (dbUser?.bio || "");
@@ -172,6 +197,120 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
             placeholder="Tu nombre completo"
             className="w-full bg-surface-100/50 border border-surface-200 rounded-xl px-4 py-3 text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/50 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           />
+        </div>
+
+        {/* Home Background */}
+        <div data-tour="profile-background">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
+            <Palette size={16} />
+            Fondo de Inicio
+          </label>
+          <p className="text-xs text-gray-500 mb-3">
+            Personaliza el fondo de tu página de inicio
+          </p>
+
+          {/* Current Selection Preview */}
+          <div className="mb-4">
+            <div
+              className="w-full h-20 rounded-xl overflow-hidden relative border border-surface-200"
+              style={
+                isCustomImageBackground(homeBackground)
+                  ? {
+                      backgroundImage: `url(${homeBackground})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }
+                  : {
+                      backgroundImage:
+                        BACKGROUND_PRESETS.find(
+                          (p) => p.id === (homeBackground || DEFAULT_BACKGROUND_ID)
+                        )?.preview || BACKGROUND_PRESETS[0].preview,
+                    }
+              }
+            >
+              {isCustomImageBackground(homeBackground) && (
+                <div className="absolute inset-0 backdrop-blur-sm" />
+              )}
+              <div className="absolute inset-0 bg-surface-0/60 flex items-center justify-center">
+                <span className="text-xs text-gray-300">
+                  {isCustomImageBackground(homeBackground)
+                    ? "Imagen personalizada"
+                    : BACKGROUND_PRESETS.find(
+                        (p) => p.id === (homeBackground || DEFAULT_BACKGROUND_ID)
+                      )?.name || "Predeterminado"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Preset Options */}
+          {canEditProfile && (
+            <>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {BACKGROUND_PRESETS.map((preset) => {
+                  const isSelected =
+                    homeBackground === preset.id ||
+                    (!homeBackground && preset.id === DEFAULT_BACKGROUND_ID);
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => handleSelectPreset(preset.id)}
+                      className={`relative h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                        isSelected
+                          ? "border-brand-yellow ring-2 ring-brand-yellow/30"
+                          : "border-surface-200 hover:border-white/30"
+                      }`}
+                      title={preset.description}
+                    >
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: preset.preview }}
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-end justify-center pb-1">
+                        <span className="text-[10px] text-white font-medium truncate px-1">
+                          {preset.name}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <div className="absolute top-1 right-1 w-4 h-4 bg-brand-yellow rounded-full flex items-center justify-center">
+                          <Check size={10} className="text-brand-blue-primary" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Image Upload Toggle */}
+              <button
+                onClick={() => setShowBackgroundUploader(!showBackgroundUploader)}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+                  isCustomImageBackground(homeBackground)
+                    ? "bg-brand-yellow/10 border-brand-yellow/50 text-brand-yellow"
+                    : "bg-surface-100/50 border-surface-200 text-gray-400 hover:border-white/30 hover:text-white"
+                }`}
+              >
+                <ImagePlus size={18} />
+                <span className="text-sm">
+                  {isCustomImageBackground(homeBackground)
+                    ? "Cambiar imagen personalizada"
+                    : "Subir imagen personalizada"}
+                </span>
+              </button>
+
+              {/* Background Image Uploader */}
+              {showBackgroundUploader && (
+                <div className="mt-3 animate-fade-in">
+                  <FileDropzone
+                    type="image"
+                    label="Subir imagen de fondo"
+                    description="Se aplicará desenfoque para mantener la legibilidad"
+                    onUploadComplete={handleBackgroundUpload}
+                  />
+                </div>
+              )}
+            </>
+          )}
         </div>
 
         {/* Instruments */}

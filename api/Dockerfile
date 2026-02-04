@@ -42,8 +42,17 @@ COPY --from=deps /app/package*.json ./
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Clean any cached build files (fixes incremental build issues in Docker)
+RUN rm -rf dist tsconfig.tsbuildinfo
+
+# Build the application with webpack (tsc has issues in Alpine)
+RUN npx nest build --builder webpack
+
+# Verify build output exists
+RUN ls -la dist/ && test -f dist/main.js || (echo "ERROR: main.js not found!" && exit 1)
+
+# Compile seed file separately (not in src/, so nest build doesn't include it)
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --skipLibCheck --module commonjs --target ES2020
 
 # -----------------------------------------------------------------------------
 # Stage 4: Production image

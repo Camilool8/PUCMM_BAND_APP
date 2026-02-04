@@ -122,6 +122,8 @@ export function useAuth() {
   const canVote = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
   // Only band members (not ALUMNI_GUEST) can edit their profile
   const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
+  // Members can upload media (scores, videos) to songs and concerts
+  const canUploadMedia = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
 
   // Check if current user is the superadmin (for showing dev toggle)
   const showDevToggle =
@@ -170,6 +172,7 @@ export function useAuth() {
     canSuggestSongs,
     canVote,
     canEditProfile,
+    canUploadMedia,
     // Dev mode
     showDevToggle,
     devViewRole,

@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { env } from "./env";
+
+// Use getter to support runtime config in Docker
+const getApiUrl = () => env.apiUrl || "http://localhost:3001";
 
 export type Role = "SUPERADMIN" | "SECTION_LEADER" | "MEMBER" | "ALUMNI_GUEST";
 
@@ -7,6 +10,7 @@ export interface DbUser {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  homeBackground: string | null; // Preset name (e.g., "aurora") or custom image URL
   role: Role;
   instruments: string[];
   phone: string | null;
@@ -18,6 +22,7 @@ export interface DbUser {
 export interface UpdateProfileDto {
   name?: string;
   avatarUrl?: string;
+  homeBackground?: string; // Preset name (e.g., "aurora") or custom image URL
   instruments?: string[];
   phone?: string;
   bio?: string;
@@ -683,4 +688,70 @@ class ApiClient {
   }
 }
 
-export const api = new ApiClient(API_URL);
+// Create a proxy that lazily initializes the API client
+// This ensures runtime config is available before initialization
+class ApiClientProxy {
+  private _client: ApiClient | null = null;
+
+  private get client(): ApiClient {
+    if (!this._client) {
+      this._client = new ApiClient(getApiUrl());
+    }
+    return this._client;
+  }
+
+  setAccessToken(token: string | null) {
+    this.client.setAccessToken(token);
+  }
+
+  getSongs = () => this.client.getSongs();
+  getSong = (id: string) => this.client.getSong(id);
+  createSong = (data: CreateSongDto) => this.client.createSong(data);
+  updateSong = (id: string, data: UpdateSongDto) => this.client.updateSong(id, data);
+  deleteSong = (id: string) => this.client.deleteSong(id);
+  voteSong = (songId: string) => this.client.voteSong(songId);
+  unvoteSong = (songId: string) => this.client.unvoteSong(songId);
+  getMyVotes = () => this.client.getMyVotes();
+  addLeadVocal = (songId: string, userId: string) => this.client.addLeadVocal(songId, userId);
+  removeLeadVocal = (songId: string, userId: string) => this.client.removeLeadVocal(songId, userId);
+  checkDuplicate = (title: string, artist: string, isrc?: string) => this.client.checkDuplicate(title, artist, isrc);
+  getMe = () => this.client.getMe();
+  getUsers = () => this.client.getUsers();
+  updateUserRole = (id: string, role: Role) => this.client.updateUserRole(id, role);
+  updateProfile = (data: UpdateProfileDto) => this.client.updateProfile(data);
+  uploadFile = (endpoint: string, file: File, onProgress?: (progress: number) => void) => this.client.uploadFile(endpoint, file, onProgress);
+  uploadImage = (file: File, onProgress?: (progress: number) => void) => this.client.uploadImage(file, onProgress);
+  uploadPdf = (file: File, onProgress?: (progress: number) => void) => this.client.uploadPdf(file, onProgress);
+  uploadVideo = (file: File, onProgress?: (progress: number) => void) => this.client.uploadVideo(file, onProgress);
+  createAsset = (data: CreateAssetDto) => this.client.createAsset(data);
+  getAssetsBySong = (songId: string) => this.client.getAssetsBySong(songId);
+  getAssetsByConcert = (concertId: string) => this.client.getAssetsByConcert(concertId);
+  deleteAsset = (id: string) => this.client.deleteAsset(id);
+  getSections = () => this.client.getSections();
+  getSection = (key: string) => this.client.getSection(key);
+  updateSection = (key: string, data: UpdateSectionDto) => this.client.updateSection(key, data);
+  clearSectionBanner = (key: string) => this.client.clearSectionBanner(key);
+  getEvents = () => this.client.getEvents();
+  getEvent = (id: string) => this.client.getEvent(id);
+  createEvent = (data: CreateEventDto) => this.client.createEvent(data);
+  updateEvent = (id: string, data: UpdateEventDto) => this.client.updateEvent(id, data);
+  deleteEvent = (id: string) => this.client.deleteEvent(id);
+  addSongToEvent = (eventId: string, songId: string) => this.client.addSongToEvent(eventId, songId);
+  removeSongFromEvent = (eventId: string, songId: string) => this.client.removeSongFromEvent(eventId, songId);
+  reorderEventSongs = (eventId: string, songIds: string[]) => this.client.reorderEventSongs(eventId, songIds);
+  getConcerts = () => this.client.getConcerts();
+  getConcertsByEvent = (eventId: string) => this.client.getConcertsByEvent(eventId);
+  getConcert = (id: string) => this.client.getConcert(id);
+  createConcert = (data: CreateConcertDto) => this.client.createConcert(data);
+  updateConcert = (id: string, data: UpdateConcertDto) => this.client.updateConcert(id, data);
+  deleteConcert = (id: string) => this.client.deleteConcert(id);
+  addSongToConcert = (concertId: string, songId: string) => this.client.addSongToConcert(concertId, songId);
+  removeSongFromConcert = (concertId: string, songId: string) => this.client.removeSongFromConcert(concertId, songId);
+  copyEventSongsToConcert = (concertId: string) => this.client.copyEventSongsToConcert(concertId);
+  reorderConcertSongs = (concertId: string, songIds: string[]) => this.client.reorderConcertSongs(concertId, songIds);
+  resolveMusicLink = (url: string) => this.client.resolveMusicLink(url);
+  searchSongMetadata = (title: string, artist: string) => this.client.searchSongMetadata(title, artist);
+  detectMusicPlatform = (url: string) => this.client.detectMusicPlatform(url);
+}
+
+export const api = new ApiClientProxy();

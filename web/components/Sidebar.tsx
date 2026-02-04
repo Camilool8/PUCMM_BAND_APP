@@ -1,18 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTour } from "@/hooks/use-tour";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, canManageUsers, logout } = useAuth();
+  const { registerModal, unregisterModal } = useTour();
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Register profile modal for tour system (desktop)
+  useEffect(() => {
+    registerModal("profile", {
+      open: () => {
+        setShowProfileModal(true);
+      },
+      close: () => {
+        setShowProfileModal(false);
+      },
+    });
+
+    return () => {
+      unregisterModal("profile");
+    };
+  }, [registerModal, unregisterModal]);
 
   return (
     <>

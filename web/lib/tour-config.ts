@@ -768,7 +768,7 @@ export const miniTours: MiniTour[] = [
   {
     id: "profile-edit",
     title: "Tu Perfil",
-    description: "Personaliza tu información",
+    description: "Personaliza tu información y fondo de inicio",
     icon: "User",
     category: "profile",
     minRole: "MEMBER",
@@ -781,31 +781,42 @@ export const miniTours: MiniTour[] = [
         },
         popover: {
           title: "Abrir Perfil",
-          description: "Toca aquí para ver y editar tu perfil.",
+          description: "Toca aquí para ver y editar tu perfil. Desde el menú puedes personalizar tu información y el fondo de la página de inicio.",
           side: "top",
         },
-        allowInteraction: true,
+        onNext: [openModal("profile"), openModal("profile-mobile")],
       },
       {
         id: "profile-edit-2",
+        waitFor: "[data-tour='profile-background']",
         popover: {
           title: "Foto de Perfil",
-          description: "Toca tu avatar para subir una foto.",
+          description: "Toca tu avatar para subir una foto de perfil personalizada.",
         },
       },
       {
         id: "profile-edit-3",
+        element: "[data-tour='profile-background']",
         popover: {
-          title: "Instrumentos",
-          description: "Selecciona qué instrumentos tocas.",
+          title: "Fondo de Inicio",
+          description: "Personaliza el fondo de tu página de inicio. Puedes elegir entre gradientes prediseñados o subir tu propia imagen.",
+          side: "top",
         },
       },
       {
         id: "profile-edit-4",
         popover: {
-          title: "Contacto",
-          description: "Agrega teléfono y bio para que te contacten.",
+          title: "Instrumentos",
+          description: "Selecciona qué instrumentos tocas. Esto ayuda a organizar las secciones de la banda.",
         },
+      },
+      {
+        id: "profile-edit-5",
+        popover: {
+          title: "Contacto y Biografía",
+          description: "Agrega tu teléfono y una breve biografía para que otros miembros puedan conocerte mejor.",
+        },
+        onNext: [closeModal("profile"), closeModal("profile-mobile")],
       },
     ],
   },

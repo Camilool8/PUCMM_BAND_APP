@@ -20,6 +20,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import { useSection, useUpdateSection, useClearSectionBanner } from "@/hooks/use-sections";
 import type { UploadResponse } from "@/lib/api";
+import { env } from "@/lib/env";
 
 interface SectionSettingsModalProps {
   sectionKey: string;
@@ -139,7 +140,7 @@ export default function SectionSettingsModal({
   }, [section]);
 
   const handleBannerUpload = (response: UploadResponse) => {
-    const fullUrl = `${process.env.NEXT_PUBLIC_API_URL}${response.file.url}`;
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     setBannerUrl(fullUrl);
     setShowBannerUploader(false);
   };

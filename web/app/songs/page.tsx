@@ -133,7 +133,24 @@ export default function SongsPage() {
   const { canSuggestSongs, canManageSongs } = useAuth();
   const { registerModal, unregisterModal } = useTour();
 
-  // Register modal for tour system
+  // Register modals for tour system
+  useEffect(() => {
+    // Register suggestion modal (always available)
+    registerModal("suggestion", {
+      open: () => {
+        setShowSuggestionModal(true);
+      },
+      close: () => {
+        setShowSuggestionModal(false);
+      },
+    });
+
+    return () => {
+      unregisterModal("suggestion");
+    };
+  }, [registerModal, unregisterModal]);
+
+  // Register song-detail modal when songs are available
   useEffect(() => {
     // Only register when we have songs to show
     if (!songs || songs.length === 0) return;

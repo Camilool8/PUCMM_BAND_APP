@@ -43,6 +43,7 @@ import MediaGallery from "@/components/MediaGallery";
 import SortableSongItem from "@/components/SortableSongItem";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import type { Concert, Song, AssetType } from "@/lib/api";
+import { env } from "@/lib/env";
 import { formatDuration, calculateSetlistDuration, hasDurationData } from "@/lib/utils";
 import Link from "next/link";
 
@@ -52,7 +53,7 @@ interface ConcertContentProps {
 }
 
 export default function ConcertContent({ concert, onBack }: ConcertContentProps) {
-  const { canManageEvents } = useAuth();
+  const { canManageEvents, canUploadMedia } = useAuth();
   const { data: fullConcert } = useConcert(concert.id);
   const { data: allSongs } = useSongs();
   const deleteConcert = useDeleteConcert();
@@ -124,9 +125,10 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   };
 
   const handleMediaUploadComplete = async (response: { file: { url: string; originalName: string } }, type: AssetType) => {
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
     await createAsset.mutateAsync({
       type,
-      url: response.file.url,
+      url: fullUrl,
       name: response.file.originalName,
       concertId: concert.id,
     });
@@ -402,7 +404,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
               </span>
             )}
           </h3>
-          {canManageEvents && !showUploadMedia && (
+          {canUploadMedia && !showUploadMedia && (
             <button
               data-tour="concert-upload-btn"
               onClick={() => setShowUploadMedia(true)}
