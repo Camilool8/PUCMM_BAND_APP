@@ -128,12 +128,12 @@ export default function MediaGallery({
                 </div>
               )}
 
-              {/* Delete button */}
+              {/* Delete button - always visible for touch devices */}
               {canDelete && onDelete && (
                 <button
                   onClick={(e) => handleDelete(asset.id, e)}
                   disabled={isCurrentlyDeleting}
-                  className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                  className="absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-all disabled:opacity-50 active:scale-95"
                 >
                   <Trash2 size={14} className="text-white" />
                 </button>

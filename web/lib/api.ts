@@ -3,7 +3,7 @@ import { env } from "./env";
 // Use getter to support runtime config in Docker
 const getApiUrl = () => env.apiUrl || "http://localhost:3001";
 
-export type Role = "SUPERADMIN" | "SECTION_LEADER" | "MEMBER" | "ALUMNI_GUEST";
+export type Role = "SUPERADMIN" | "MEMBER" | "STUDENT_GUEST";
 
 export interface DbUser {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, ShieldCheck, User, GraduationCap, X } from "lucide-react";
+import { Users, Shield, User, GraduationCap, X } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { useUsers, useUpdateUserRole } from "@/hooks/use-users";
 import type { DbUser, Role } from "@/lib/api";
@@ -13,30 +13,23 @@ interface AdminUsersModalProps {
 
 const ROLE_OPTIONS: { value: Role; label: string; icon: React.ReactNode; color: string }[] = [
   {
-    value: "SECTION_LEADER",
-    label: "Jefe de Cuerda",
-    icon: <ShieldCheck size={14} />,
-    color: "text-blue-400",
-  },
-  {
     value: "MEMBER",
     label: "Miembro",
     icon: <User size={14} />,
-    color: "text-gray-400",
+    color: "text-blue-400",
   },
   {
-    value: "ALUMNI_GUEST",
-    label: "Egresado",
+    value: "STUDENT_GUEST",
+    label: "Estudiante/Invitado",
     icon: <GraduationCap size={14} />,
-    color: "text-amber-400",
+    color: "text-gray-400",
   },
 ];
 
 const ROLE_DISPLAY: Record<Role, { label: string; color: string; bgColor: string }> = {
-  SUPERADMIN: { label: "Super Admin", color: "text-purple-400", bgColor: "bg-purple-500/20" },
-  SECTION_LEADER: { label: "Jefe de Cuerda", color: "text-blue-400", bgColor: "bg-blue-500/20" },
-  MEMBER: { label: "Miembro", color: "text-gray-400", bgColor: "bg-gray-500/20" },
-  ALUMNI_GUEST: { label: "Egresado", color: "text-amber-400", bgColor: "bg-amber-500/20" },
+  SUPERADMIN: { label: "Administrador", color: "text-purple-400", bgColor: "bg-purple-500/20" },
+  MEMBER: { label: "Miembro", color: "text-blue-400", bgColor: "bg-blue-500/20" },
+  STUDENT_GUEST: { label: "Estudiante/Invitado", color: "text-gray-400", bgColor: "bg-gray-500/20" },
 };
 
 export default function AdminUsersModal({ isOpen, onClose }: AdminUsersModalProps) {

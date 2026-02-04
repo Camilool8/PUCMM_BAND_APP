@@ -53,7 +53,7 @@ interface ConcertContentProps {
 }
 
 export default function ConcertContent({ concert, onBack }: ConcertContentProps) {
-  const { canManageEvents, canUploadMedia } = useAuth();
+  const { canManageEvents, canUploadMedia, canDeleteAssets } = useAuth();
   const { data: fullConcert } = useConcert(concert.id);
   const { data: allSongs } = useSongs();
   const deleteConcert = useDeleteConcert();
@@ -450,7 +450,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
           assets={assets}
           onDelete={handleDeleteAsset}
           isDeleting={deleteAsset.isPending}
-          canDelete={canManageEvents}
+          canDelete={canDeleteAssets}
         />
       </div>
 

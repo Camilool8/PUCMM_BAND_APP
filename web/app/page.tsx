@@ -104,8 +104,8 @@ export default function Home() {
         <p className="text-sm text-gray-500 mt-1">
           {isAdmin
             ? "Panel de administracion"
-            : user?.role === "ALUMNI_GUEST"
-            ? "Vista de invitado"
+            : user?.role === "STUDENT_GUEST"
+            ? "Vista de estudiante"
             : "Centro de miembro"}
         </p>
       </header>
@@ -239,9 +239,9 @@ export default function Home() {
       )}
 
       {/* ============================================= */}
-      {/* MEMBER VIEW (non-admin, not alumni_guest) */}
+      {/* MEMBER VIEW (non-admin, not student_guest) */}
       {/* ============================================= */}
-      {!isAdmin && user?.role !== "ALUMNI_GUEST" && (
+      {!isAdmin && user?.role !== "STUDENT_GUEST" && (
         <>
           {/* Member Stats */}
           <section data-tour="member-stats" className="grid grid-cols-3 gap-3">
@@ -367,9 +367,9 @@ export default function Home() {
       )}
 
       {/* ============================================= */}
-      {/* ALUMNI_GUEST VIEW (Read-only) */}
+      {/* STUDENT_GUEST VIEW (Read-only) */}
       {/* ============================================= */}
-      {user?.role === "ALUMNI_GUEST" && (
+      {user?.role === "STUDENT_GUEST" && (
         <>
           {/* Read-only notice */}
           <div className="rounded-2xl p-4 bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">

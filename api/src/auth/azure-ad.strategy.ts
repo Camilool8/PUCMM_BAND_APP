@@ -49,7 +49,7 @@ export class AzureADStrategy extends PassportStrategy(BearerStrategy, 'azure-ad'
       create: {
         email: normalizedEmail,
         name: payload.name,
-        role: isSuperAdmin ? Role.SUPERADMIN : Role.MEMBER,
+        role: isSuperAdmin ? Role.SUPERADMIN : Role.STUDENT_GUEST,
         jobTitle: payload.jobTitle,
         department: payload.department,
       },

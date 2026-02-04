@@ -23,10 +23,9 @@ export interface User {
 
 // Role display names in Spanish
 const ROLE_DISPLAY_NAMES: Record<Role, string> = {
-  SUPERADMIN: "Super Admin",
-  SECTION_LEADER: "Jefe de Cuerda",
+  SUPERADMIN: "Administrador",
   MEMBER: "Miembro",
-  ALUMNI_GUEST: "Egresado/Invitado",
+  STUDENT_GUEST: "Estudiante/Invitado",
 };
 
 export function useAuth() {
@@ -43,7 +42,7 @@ export function useAuth() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("devViewRole");
-      if (stored && ["SUPERADMIN", "SECTION_LEADER", "MEMBER", "ALUMNI_GUEST"].includes(stored)) {
+      if (stored && ["SUPERADMIN", "MEMBER", "STUDENT_GUEST"].includes(stored)) {
         setDevViewRole(stored as Role);
       }
     }
@@ -112,18 +111,20 @@ export function useAuth() {
       : user.role
     : null;
 
-  const isAdmin = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
+  const isAdmin = effectiveRole === "SUPERADMIN";
   const canManageUsers = effectiveRole === "SUPERADMIN";
-  const canManageSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
-  const canManageEvents = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER";
-  // Members can suggest, students (ALUMNI_GUEST) can only view
-  const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
-  // Only band members (not ALUMNI_GUEST) can vote on suggestions
-  const canVote = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
-  // Only band members (not ALUMNI_GUEST) can edit their profile
-  const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
+  const canManageSongs = effectiveRole === "SUPERADMIN";
+  const canManageEvents = effectiveRole === "SUPERADMIN";
+  // Members can suggest, students (STUDENT_GUEST) can only view
+  const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
+  // Only members (not STUDENT_GUEST) can vote on suggestions
+  const canVote = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
+  // Only members (not STUDENT_GUEST) can edit their profile
+  const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
   // Members can upload media (scores, videos) to songs and concerts
-  const canUploadMedia = effectiveRole === "SUPERADMIN" || effectiveRole === "SECTION_LEADER" || effectiveRole === "MEMBER";
+  const canUploadMedia = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
+  // Only admin can delete assets
+  const canDeleteAssets = effectiveRole === "SUPERADMIN";
 
   // Check if current user is the superadmin (for showing dev toggle)
   const showDevToggle =
@@ -173,6 +174,7 @@ export function useAuth() {
     canVote,
     canEditProfile,
     canUploadMedia,
+    canDeleteAssets,
     // Dev mode
     showDevToggle,
     devViewRole,

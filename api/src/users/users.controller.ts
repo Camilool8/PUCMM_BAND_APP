@@ -19,8 +19,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const VALID_ROLES = Object.values(Role);
 
-// Roles that can edit their own profile (band members, not alumni/guests)
-const EDITABLE_PROFILE_ROLES = [Role.SUPERADMIN, Role.SECTION_LEADER, Role.MEMBER];
+// Roles that can edit their own profile (admin and members, not students/guests)
+const EDITABLE_PROFILE_ROLES = [Role.SUPERADMIN, Role.MEMBER];
 
 @Controller('users')
 @UseGuards(AzureAdGuard)
@@ -33,7 +33,7 @@ export class UsersController {
     return req.user.dbUser;
   }
 
-  // Update current user's profile (band members only, not ALUMNI_GUEST)
+  // Update current user's profile (admin and members only, not STUDENT_GUEST)
   @Patch('me/profile')
   async updateMyProfile(
     @Request() req,

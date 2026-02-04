@@ -12,13 +12,12 @@ import {
   ZoomOut,
   Download,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 
-// Set up PDF.js worker - only on client side
-if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-}
+// Set up PDF.js worker - use unpkg with exact version match
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface PDFViewerModalProps {
   isOpen: boolean;
@@ -48,8 +47,8 @@ export default function PDFViewerModal({
 
   const onDocumentLoadError = useCallback((error: Error) => {
     setIsLoading(false);
-    setError("Error al cargar el PDF. Intenta descargarlo directamente.");
-    console.error("PDF load error:", error);
+    setError("Error al cargar el PDF. Intenta abrirlo en una nueva pestaña.");
+    console.error("PDF load error:", error.message, error);
   }, []);
 
   const goToPrevPage = () => {
@@ -150,12 +149,22 @@ export default function PDFViewerModal({
         {error ? (
           <div className="text-center p-8">
             <p className="text-red-400 mb-4">{error}</p>
-            <button
-              onClick={handleDownload}
-              className="px-4 py-2 bg-brand-yellow text-brand-blue-primary font-medium rounded-lg hover:bg-brand-yellow/90 transition-colors"
-            >
-              Descargar PDF
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={handleDownload}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-yellow text-brand-blue-primary font-medium rounded-lg hover:bg-brand-yellow/90 transition-colors"
+              >
+                <ExternalLink size={16} />
+                Abrir en nueva pestaña
+              </button>
+              <button
+                onClick={handleDownload}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-100 text-white font-medium rounded-lg hover:bg-surface-100/80 transition-colors border border-surface-200"
+              >
+                <Download size={16} />
+                Descargar
+              </button>
+            </div>
           </div>
         ) : (
           <Document

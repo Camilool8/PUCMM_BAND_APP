@@ -19,7 +19,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 
-const CONCERT_ADMIN_ROLES = [Role.SUPERADMIN, Role.SECTION_LEADER];
+const CONCERT_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('concerts')
 @UseGuards(AzureAdGuard, RolesGuard)

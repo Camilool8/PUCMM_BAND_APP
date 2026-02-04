@@ -14,8 +14,8 @@ import { UpdateSectionDto } from './dto/update-section.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { Role } from '@prisma/client';
 
-// Only SUPERADMIN and SECTION_LEADER can edit sections
-const SECTION_ADMIN_ROLES = [Role.SUPERADMIN, Role.SECTION_LEADER];
+// Only SUPERADMIN can edit sections
+const SECTION_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('repertoire-sections')
 @UseGuards(AzureAdGuard)

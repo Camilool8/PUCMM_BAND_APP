@@ -18,8 +18,8 @@ import { ReorderSongsDto } from './dto/reorder-songs.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { Role } from '@prisma/client';
 
-// Only SUPERADMIN and SECTION_LEADER can manage events
-const EVENT_ADMIN_ROLES = [Role.SUPERADMIN, Role.SECTION_LEADER];
+// Only SUPERADMIN can manage events
+const EVENT_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('events')
 @UseGuards(AzureAdGuard)

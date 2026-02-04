@@ -12,10 +12,9 @@ datasource db {
 }
 
 enum Role {
-  SUPERADMIN
-  SECTION_LEADER
-  MEMBER
-  ALUMNI_GUEST
+  SUPERADMIN      // Administrador - full access
+  MEMBER          // Miembro - can suggest songs, upload media, vote
+  STUDENT_GUEST   // Estudiante/Invitado - view only (default)
 }
 
 enum SongStatus {
@@ -37,7 +36,7 @@ model User {
   name           String?
   avatarUrl      String?  // Profile picture URL
   homeBackground String?  // Home background: preset name (e.g., "aurora") or custom image URL
-  role           Role     @default(MEMBER)
+  role           Role     @default(STUDENT_GUEST)
   instruments    String[]
   phone          String?
   bio            String?  // Short user bio

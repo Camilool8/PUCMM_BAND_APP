@@ -117,7 +117,7 @@ const STATUS_OPTIONS: {
 
 export default function SongDetailModal({ song, onClose }: SongDetailModalProps) {
   const router = useRouter();
-  const { canManageSongs, canUploadMedia } = useAuth();
+  const { canManageSongs, canUploadMedia, canDeleteAssets } = useAuth();
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
   const addLeadVocal = useAddLeadVocal();
@@ -829,10 +829,10 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                         </div>
                         <ExternalLink size={14} className="text-gray-500 group-hover:text-brand-yellow transition-colors shrink-0" />
                       </button>
-                      {canManageSongs && (
+                      {canDeleteAssets && (
                         <button
                           onClick={() => handleDeleteAsset(asset.id)}
-                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all active:scale-95"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -904,10 +904,10 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                         </div>
                         <Play size={14} className="text-gray-500 group-hover:text-brand-yellow transition-colors shrink-0" />
                       </button>
-                      {canManageSongs && (
+                      {canDeleteAssets && (
                         <button
                           onClick={() => handleDeleteAsset(asset.id)}
-                          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                          className="p-2 text-red-400/60 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all active:scale-95"
                         >
                           <Trash2 size={14} />
                         </button>

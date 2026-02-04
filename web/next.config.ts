@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   // Enable standalone output for optimized Docker builds
   output: 'standalone',
+  // Required for react-pdf to work properly with Turbopack
+  turbopack: {},
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    return config;
+  },
   images: {
     remotePatterns: [
       {

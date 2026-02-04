@@ -28,7 +28,7 @@ export type MiniTourId =
 
 export type AggregatedTourId = "welcome" | "role-upgrade";
 export type TourId = MiniTourId | AggregatedTourId;
-export type UserRole = "SUPERADMIN" | "SECTION_LEADER" | "MEMBER" | "ALUMNI_GUEST";
+export type UserRole = "SUPERADMIN" | "MEMBER" | "STUDENT_GUEST";
 
 export interface MiniTour {
   id: MiniTourId;
@@ -54,10 +54,9 @@ export interface AggregatedTour {
 // ============================================================================
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
-  ALUMNI_GUEST: 0,
+  STUDENT_GUEST: 0,
   MEMBER: 1,
-  SECTION_LEADER: 2,
-  SUPERADMIN: 3,
+  SUPERADMIN: 2,
 };
 
 export function isRoleUpgrade(previousRole: UserRole, currentRole: UserRole): boolean {
@@ -72,19 +71,14 @@ export function getNewCapabilities(previousRole: UserRole, currentRole: UserRole
 
   const newTours: MiniTourId[] = [];
 
-  // ALUMNI_GUEST -> MEMBER
+  // STUDENT_GUEST -> MEMBER
   if (prevLevel < 1 && currLevel >= 1) {
     newTours.push("songs-suggest", "songs-vote", "profile-edit");
   }
 
-  // MEMBER -> SECTION_LEADER
+  // MEMBER -> SUPERADMIN
   if (prevLevel < 2 && currLevel >= 2) {
-    newTours.push("songs-admin", "events-admin", "concerts-admin", "events-setlist");
-  }
-
-  // SECTION_LEADER -> SUPERADMIN
-  if (prevLevel < 3 && currLevel >= 3) {
-    newTours.push("users-admin");
+    newTours.push("songs-admin", "events-admin", "concerts-admin", "events-setlist", "users-admin");
   }
 
   return newTours;
@@ -104,7 +98,7 @@ export const miniTours: MiniTour[] = [
     description: "Conoce las secciones de la app",
     icon: "Compass",
     category: "navigation",
-    minRole: "ALUMNI_GUEST",
+    minRole: "STUDENT_GUEST",
     steps: [
       {
         id: "nav-welcome",
@@ -211,7 +205,7 @@ export const miniTours: MiniTour[] = [
     description: "Navega y busca canciones",
     icon: "Music",
     category: "songs",
-    minRole: "ALUMNI_GUEST",
+    minRole: "STUDENT_GUEST",
     targetPage: "/songs",
     steps: [
       {
@@ -256,7 +250,7 @@ export const miniTours: MiniTour[] = [
     description: "Entiende toda la información disponible",
     icon: "FileText",
     category: "songs",
-    minRole: "ALUMNI_GUEST",
+    minRole: "STUDENT_GUEST",
     targetPage: "/songs",
     steps: [
       {
@@ -429,7 +423,7 @@ export const miniTours: MiniTour[] = [
     description: "Gestiona el repertorio completo",
     icon: "Settings",
     category: "songs",
-    minRole: "SECTION_LEADER",
+    minRole: "SUPERADMIN",
     targetPage: "/songs",
     steps: [
       {
@@ -491,7 +485,7 @@ export const miniTours: MiniTour[] = [
     description: "Ve los eventos de la banda",
     icon: "Calendar",
     category: "events",
-    minRole: "ALUMNI_GUEST",
+    minRole: "STUDENT_GUEST",
     targetPage: "/events",
     steps: [
       {
@@ -553,7 +547,7 @@ export const miniTours: MiniTour[] = [
     description: "Crea y gestiona eventos",
     icon: "CalendarPlus",
     category: "events",
-    minRole: "SECTION_LEADER",
+    minRole: "SUPERADMIN",
     targetPage: "/events",
     steps: [
       {
@@ -594,7 +588,7 @@ export const miniTours: MiniTour[] = [
     description: "Organiza las canciones del evento",
     icon: "ListMusic",
     category: "events",
-    minRole: "SECTION_LEADER",
+    minRole: "SUPERADMIN",
     targetPage: "/events",
     steps: [
       {
@@ -638,7 +632,7 @@ export const miniTours: MiniTour[] = [
     description: "Ve las presentaciones de la banda",
     icon: "Ticket",
     category: "concerts",
-    minRole: "ALUMNI_GUEST",
+    minRole: "STUDENT_GUEST",
     targetPage: "/concerts",
     steps: [
       {
@@ -702,7 +696,7 @@ export const miniTours: MiniTour[] = [
     description: "Crea y gestiona conciertos",
     icon: "CalendarCheck",
     category: "concerts",
-    minRole: "SECTION_LEADER",
+    minRole: "SUPERADMIN",
     targetPage: "/concerts",
     steps: [
       {
@@ -849,7 +843,7 @@ export const miniTours: MiniTour[] = [
         id: "users-admin-2",
         popover: {
           title: "Roles",
-          description: "SUPERADMIN: Todo. SECTION_LEADER: Repertorio. MEMBER: Sugerir. GUEST: Solo ver.",
+          description: "ADMIN: Todo. MEMBER: Sugerir. ESTUDIANTE: Solo ver.",
         },
       },
       {
@@ -891,14 +885,9 @@ export const aggregatedTours: AggregatedTour[] = [
         tours.push("songs-suggest", "profile-edit");
       }
 
-      // Section Leader+ features - they don't suggest, they add directly
-      if (ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.SECTION_LEADER) {
-        tours.push("songs-admin", "events-admin", "events-setlist", "concerts-admin", "profile-edit");
-      }
-
-      // Superadmin features
+      // Admin features - they don't suggest, they add directly
       if (role === "SUPERADMIN") {
-        tours.push("users-admin");
+        tours.push("songs-admin", "events-admin", "events-setlist", "concerts-admin", "profile-edit", "users-admin");
       }
 
       return tours;

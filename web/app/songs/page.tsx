@@ -356,7 +356,7 @@ export default function SongsPage() {
           <span className="ml-1.5 md:ml-2 px-1.5 py-0.5 text-xs rounded-full bg-white/10">{repertoireCount}</span>
         </button>
 
-        {/* Show Sugerencias tab to admins and members (hide from ALUMNI_GUEST only) */}
+        {/* Show Sugerencias tab to admins and members (hide from STUDENT_GUEST only) */}
         {canSuggestSongs && (
           <button
             onClick={() => handleTabChange("sugerencias")}

@@ -13,6 +13,8 @@ export class SongsController {
   constructor(private readonly songsService: SongsService) {}
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
   create(@Request() req, @Body() createSongDto: CreateSongDto) {
     const userId = req.user?.dbUser?.id;
     return this.songsService.create(createSongDto, userId);
@@ -25,7 +27,7 @@ export class SongsController {
 
   @Get('my-votes')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER, Role.MEMBER)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
   getMyVotes(@Request() req) {
     const userId = req.user?.dbUser?.id;
     return this.songsService.getUserVotes(userId);
@@ -47,25 +49,25 @@ export class SongsController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+  @Roles(Role.SUPERADMIN)
   update(@Param('id') id: string, @Body() updateSongDto: UpdateSongDto) {
     return this.songsService.update(id, updateSongDto);
   }
 
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+  @Roles(Role.SUPERADMIN)
   remove(@Param('id') id: string) {
     return this.songsService.remove(id);
   }
 
   // ============================================================================
-  // Voting Endpoints (only band members can vote, not ALUMNI_GUEST)
+  // Voting Endpoints (only members can vote, not STUDENT_GUEST)
   // ============================================================================
 
   @Post(':id/vote')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER, Role.MEMBER)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
   addVote(@Param('id') id: string, @Request() req) {
     const userId = req.user?.dbUser?.id;
     return this.songsService.addVote(id, userId);
@@ -73,7 +75,7 @@ export class SongsController {
 
   @Delete(':id/vote')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER, Role.MEMBER)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
   removeVote(@Param('id') id: string, @Request() req) {
     const userId = req.user?.dbUser?.id;
     return this.songsService.removeVote(id, userId);
@@ -85,14 +87,14 @@ export class SongsController {
 
   @Post(':id/lead-vocals/:userId')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+  @Roles(Role.SUPERADMIN)
   addLeadVocal(@Param('id') id: string, @Param('userId') userId: string) {
     return this.songsService.addLeadVocal(id, userId);
   }
 
   @Delete(':id/lead-vocals/:userId')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+  @Roles(Role.SUPERADMIN)
   removeLeadVocal(@Param('id') id: string, @Param('userId') userId: string) {
     return this.songsService.removeLeadVocal(id, userId);
   }

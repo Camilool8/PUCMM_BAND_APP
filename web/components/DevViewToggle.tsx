@@ -9,7 +9,7 @@ const ROLE_OPTIONS: { role: Role | null; label: string; description: string; ico
   { role: null, label: "Mi Rol Real", description: "Super Admin", icon: Shield },
   { role: "SUPERADMIN", label: "Admin", description: "Puede editar todo", icon: Shield },
   { role: "MEMBER", label: "Miembro", description: "Puede sugerir", icon: Music },
-  { role: "ALUMNI_GUEST", label: "Estudiante", description: "Solo puede ver", icon: Eye },
+  { role: "STUDENT_GUEST", label: "Estudiante", description: "Solo puede ver", icon: Eye },
 ];
 
 export default function DevViewToggle() {

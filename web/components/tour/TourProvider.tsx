@@ -35,7 +35,7 @@ export type MiniTourId =
 
 export type AggregatedTourId = "welcome" | "role-upgrade";
 export type TourId = MiniTourId | AggregatedTourId;
-export type UserRole = "SUPERADMIN" | "SECTION_LEADER" | "MEMBER" | "ALUMNI_GUEST";
+export type UserRole = "SUPERADMIN" | "MEMBER" | "STUDENT_GUEST";
 
 interface TourContextType {
   // Tour state
