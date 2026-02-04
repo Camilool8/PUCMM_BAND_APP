@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 PUCMM Band App - A repertoire management system for the PUCMM university band. Monorepo with NestJS backend (`/api`) and Next.js frontend (`/web`).
 
+**Production URLs:**
+- App: https://pucmm-band.cjoga.cloud
+- API: https://pucmm-band-api.cjoga.cloud
+
 ## Commands
 
 ### Development
@@ -346,10 +350,12 @@ const response = await api.uploadImage(file, (progress) => {
 
 ### API (`api/.env`)
 ```
-DATABASE_URL=postgresql://pucmm_band:pucmm_band_2024@localhost:5433/pucmm_band
+DATABASE_URL=postgresql://...
 AZURE_AD_TENANT_ID=
 AZURE_AD_CLIENT_ID=
 AZURE_AD_CLIENT_SECRET=
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
 PORT=3001
 ```
 
@@ -358,6 +364,12 @@ PORT=3001
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_AZURE_AD_TENANT_ID=
 NEXT_PUBLIC_AZURE_AD_CLIENT_ID=
+```
+
+### Production
+```
+# App: https://pucmm-band.cjoga.cloud
+# API: https://pucmm-band-api.cjoga.cloud
 ```
 
 ## Ports

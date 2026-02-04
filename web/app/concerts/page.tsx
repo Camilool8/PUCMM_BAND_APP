@@ -156,7 +156,7 @@ export default function ConcertsPage() {
   }, [activeTab, allConcerts, upcomingConcerts, pastConcerts, searchQuery]);
 
   const handleConcertClick = (concert: Concert) => {
-    setActiveTab(concert.id);
+    router.push(`/concerts/${concert.id}`);
   };
 
   // Dynamic header content based on selected tab

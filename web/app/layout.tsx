@@ -14,8 +14,24 @@ import { Providers } from "@/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "PUCMM Band App",
-  description: "Gestión de repertorio de la Banda PUCMM",
+  title: {
+    default: "PUCMM Band App",
+    template: "%s | PUCMM Band",
+  },
+  description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
+  metadataBase: new URL("https://pucmm-band.cjoga.cloud"),
+  openGraph: {
+    title: "PUCMM Band App",
+    description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
+    siteName: "PUCMM Band",
+    locale: "es_DO",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PUCMM Band App",
+    description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

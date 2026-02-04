@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useEvents, useEvent } from "@/hooks/use-events";
 import { useSection } from "@/hooks/use-sections";
 import { useAuth } from "@/hooks/use-auth";
@@ -75,6 +76,8 @@ const getColor = (colorName: string | null): string => {
 };
 
 export default function EventsPage() {
+  const router = useRouter();
+
   // "todos" or an event ID
   const [activeTab, setActiveTab] = useState<string>("todos");
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,7 +117,7 @@ export default function EventsPage() {
   }, [events, activeTab, searchQuery]);
 
   const handleEventClick = (event: Event) => {
-    setActiveTab(event.id);
+    router.push(`/events/${event.id}`);
   };
 
   const handleEdit = (event: Event) => {
