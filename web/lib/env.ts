@@ -7,6 +7,7 @@
 
 type EnvConfig = {
   NEXT_PUBLIC_API_URL: string;
+  NEXT_PUBLIC_SITE_URL: string;
   NEXT_PUBLIC_AZURE_AD_CLIENT_ID: string;
   NEXT_PUBLIC_AZURE_AD_TENANT_ID: string;
 };
@@ -34,6 +35,9 @@ function getEnvValue(key: keyof EnvConfig): string {
 export const env = {
   get apiUrl(): string {
     return getEnvValue("NEXT_PUBLIC_API_URL");
+  },
+  get siteUrl(): string {
+    return getEnvValue("NEXT_PUBLIC_SITE_URL") || "https://pucmm-band.cjoga.cloud";
   },
   get azureAdClientId(): string {
     return getEnvValue("NEXT_PUBLIC_AZURE_AD_CLIENT_ID");

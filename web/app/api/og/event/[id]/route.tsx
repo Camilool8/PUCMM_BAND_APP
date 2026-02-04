@@ -1,8 +1,7 @@
 import { ImageResponse } from "next/og";
+import { env } from "@/lib/env";
 
 export const runtime = "edge";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface EventMetadata {
   id: string;
@@ -20,7 +19,7 @@ export async function GET(
 
   let event: EventMetadata | null = null;
   try {
-    const res = await fetch(`${API_URL}/public/metadata/event/${id}`);
+    const res = await fetch(`${env.apiUrl}/public/metadata/event/${id}`);
     if (res.ok) {
       event = await res.json();
     }

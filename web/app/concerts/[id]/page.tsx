@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import ConcertClient from "./ConcertClient";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { env } from "@/lib/env";
 
 interface ConcertMetadata {
   id: string;
@@ -13,7 +12,7 @@ interface ConcertMetadata {
 
 async function getConcertMetadata(id: string): Promise<ConcertMetadata | null> {
   try {
-    const res = await fetch(`${API_URL}/public/metadata/concert/${id}`, {
+    const res = await fetch(`${env.apiUrl}/public/metadata/concert/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
@@ -41,16 +40,39 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const concert = await getConcertMetadata(id);
 
+  // Always use absolute URL for OG image
+  const ogImageUrl = `${env.siteUrl}/api/og/concert/${id}`;
+
   if (!concert) {
+    // Fallback metadata - still include OG image so it generates dynamically
     return {
       title: "Concierto | PUCMM Band",
-      description: "Detalles del concierto",
+      description: "Detalles del concierto - PUCMM Band",
+      openGraph: {
+        title: "Concierto",
+        description: "Detalles del concierto - PUCMM Band",
+        type: "website",
+        siteName: "PUCMM Band",
+        images: [
+          {
+            url: ogImageUrl,
+            width: 1200,
+            height: 630,
+            alt: "Concierto PUCMM Band",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Concierto | PUCMM Band",
+        description: "Detalles del concierto - PUCMM Band",
+        images: [ogImageUrl],
+      },
     };
   }
 
   const title = `${formatDate(concert.date)} | PUCMM Band`;
   const description = `${concert.eventName}${concert.location ? ` - ${concert.location}` : ""}`;
-  const ogImageUrl = `/api/og/concert/${id}`;
 
   return {
     title,

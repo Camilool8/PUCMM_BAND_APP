@@ -1,7 +1,6 @@
 import { Metadata } from "next";
 import SongClient from "./SongClient";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { env } from "@/lib/env";
 
 interface SongMetadata {
   id: string;
@@ -13,7 +12,7 @@ interface SongMetadata {
 
 async function getSongMetadata(id: string): Promise<SongMetadata | null> {
   try {
-    const res = await fetch(`${API_URL}/public/metadata/song/${id}`, {
+    const res = await fetch(`${env.apiUrl}/public/metadata/song/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;
@@ -31,10 +30,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const song = await getSongMetadata(id);
 
+  // Always use absolute URL for OG image
+  const ogImageUrl = `${env.siteUrl}/api/og/song/${id}`;
+
   if (!song) {
     return {
       title: "Cancion | PUCMM Band",
-      description: "Detalles de la cancion",
+      description: "Detalles de la cancion - PUCMM Band",
+      openGraph: {
+        title: "Cancion",
+        description: "Detalles de la cancion - PUCMM Band",
+        type: "music.song",
+        siteName: "PUCMM Band",
+        images: [
+          {
+            url: ogImageUrl,
+            width: 1200,
+            height: 630,
+            alt: "Cancion PUCMM Band",
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "Cancion | PUCMM Band",
+        description: "Detalles de la cancion - PUCMM Band",
+        images: [ogImageUrl],
+      },
     };
   }
 
@@ -42,7 +64,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = song.genre
     ? `${song.title} de ${song.artist} (${song.genre}) - Repertorio PUCMM Band`
     : `${song.title} de ${song.artist} - Repertorio PUCMM Band`;
-  const ogImageUrl = `/api/og/song/${id}`;
 
   return {
     title,
@@ -52,23 +73,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: "music.song",
       siteName: "PUCMM Band",
-      images: song.coverUrl
-        ? [
-            {
-              url: ogImageUrl,
-              width: 1200,
-              height: 630,
-              alt: `${song.title} - ${song.artist}`,
-            },
-          ]
-        : [
-            {
-              url: ogImageUrl,
-              width: 1200,
-              height: 630,
-              alt: `${song.title} - ${song.artist}`,
-            },
-          ],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${song.title} - ${song.artist}`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",

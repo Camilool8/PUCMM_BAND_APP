@@ -1,8 +1,7 @@
 import { ImageResponse } from "next/og";
+import { env } from "@/lib/env";
 
 export const runtime = "edge";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface SongMetadata {
   id: string;
@@ -20,7 +19,7 @@ export async function GET(
 
   let song: SongMetadata | null = null;
   try {
-    const res = await fetch(`${API_URL}/public/metadata/song/${id}`);
+    const res = await fetch(`${env.apiUrl}/public/metadata/song/${id}`);
     if (res.ok) {
       song = await res.json();
     }

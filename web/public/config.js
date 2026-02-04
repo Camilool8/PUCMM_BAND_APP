@@ -2,6 +2,7 @@
 // See entrypoint.sh
 window.__ENV__ = {
   NEXT_PUBLIC_API_URL: "",
+  NEXT_PUBLIC_SITE_URL: "",
   NEXT_PUBLIC_AZURE_AD_CLIENT_ID: "",
   NEXT_PUBLIC_AZURE_AD_TENANT_ID: "",
 };
