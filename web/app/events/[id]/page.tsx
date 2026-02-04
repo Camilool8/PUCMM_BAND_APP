@@ -12,7 +12,7 @@ interface EventMetadata {
 
 async function getEventMetadata(id: string): Promise<EventMetadata | null> {
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/event/${id}`, {
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/event/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

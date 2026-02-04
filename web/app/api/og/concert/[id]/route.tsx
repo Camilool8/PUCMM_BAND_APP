@@ -29,7 +29,7 @@ export async function GET(
 
   let concert: ConcertMetadata | null = null;
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/concert/${id}`);
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/concert/${id}`);
     if (res.ok) {
       concert = await res.json();
     }

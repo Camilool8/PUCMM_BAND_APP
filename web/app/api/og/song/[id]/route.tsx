@@ -19,7 +19,7 @@ export async function GET(
 
   let song: SongMetadata | null = null;
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/song/${id}`);
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/song/${id}`);
     if (res.ok) {
       song = await res.json();
     }

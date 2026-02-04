@@ -10,6 +10,8 @@ type EnvConfig = {
   NEXT_PUBLIC_SITE_URL: string;
   NEXT_PUBLIC_AZURE_AD_CLIENT_ID: string;
   NEXT_PUBLIC_AZURE_AD_TENANT_ID: string;
+  // Server-only env vars (not prefixed with NEXT_PUBLIC_)
+  API_INTERNAL_URL?: string;
 };
 
 declare global {
@@ -33,8 +35,18 @@ function getEnvValue(key: keyof EnvConfig): string {
 }
 
 export const env = {
+  /** Public API URL - use for client-side fetches and public URLs */
   get apiUrl(): string {
-    return getEnvValue("NEXT_PUBLIC_API_URL");
+    return getEnvValue("NEXT_PUBLIC_API_URL") || "https://pucmm-band-api.cjoga.cloud";
+  },
+  /** Internal API URL - use for server-side fetches (SSR/generateMetadata) */
+  get apiUrlInternal(): string {
+    // On server: prefer internal URL for Kubernetes, fallback to public URL
+    if (typeof window === "undefined") {
+      return process.env.API_INTERNAL_URL || this.apiUrl;
+    }
+    // On client: always use public URL
+    return this.apiUrl;
   },
   get siteUrl(): string {
     return getEnvValue("NEXT_PUBLIC_SITE_URL") || "https://pucmm-band.cjoga.cloud";

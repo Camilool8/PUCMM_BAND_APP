@@ -12,7 +12,7 @@ interface SongMetadata {
 
 async function getSongMetadata(id: string): Promise<SongMetadata | null> {
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/song/${id}`, {
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/song/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

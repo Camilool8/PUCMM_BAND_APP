@@ -12,7 +12,7 @@ interface ConcertMetadata {
 
 async function getConcertMetadata(id: string): Promise<ConcertMetadata | null> {
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/concert/${id}`, {
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/concert/${id}`, {
       next: { revalidate: 60 },
     });
     if (!res.ok) return null;

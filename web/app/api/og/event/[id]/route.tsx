@@ -19,7 +19,7 @@ export async function GET(
 
   let event: EventMetadata | null = null;
   try {
-    const res = await fetch(`${env.apiUrl}/public/metadata/event/${id}`);
+    const res = await fetch(`${env.apiUrlInternal}/public/metadata/event/${id}`);
     if (res.ok) {
       event = await res.json();
     }
