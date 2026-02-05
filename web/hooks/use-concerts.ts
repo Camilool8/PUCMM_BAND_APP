@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api, Concert, CreateConcertDto, UpdateConcertDto } from "@/lib/api";
+import { api, Concert, CreateConcertDto, UpdateConcertDto, CreateBlockDto, UpdateBlockDto } from "@/lib/api";
 import { TOAST_MESSAGES } from "@/lib/toast";
 
 export function useConcerts() {
@@ -102,6 +102,24 @@ export function useAddSongToConcert() {
   });
 }
 
+export function useAddSongsToConcertBulk() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ concertId, songIds }: { concertId: string; songIds: string[] }) =>
+      api.addSongsToConcertBulk(concertId, songIds),
+    onSuccess: (concert, { concertId }) => {
+      queryClient.invalidateQueries({ queryKey: ["concerts"] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", "event", concert.eventId] });
+      toast.success(TOAST_MESSAGES.SONGS_ADDED_TO_CONCERT_BULK);
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}
+
 export function useRemoveSongFromConcert() {
   const queryClient = useQueryClient();
 
@@ -147,6 +165,100 @@ export function useReorderConcertSongs() {
       queryClient.invalidateQueries({ queryKey: ["concerts"] });
       queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
       queryClient.invalidateQueries({ queryKey: ["concerts", "event", concert.eventId] });
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}
+
+// Optimistic unified reorder for songs + blocks
+export function useReorderConcertSetlist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ concertId, items }: { concertId: string; items: { id: string; itemType: "song" | "block" }[] }) =>
+      api.reorderConcertSetlist(concertId, items),
+    onMutate: async ({ concertId, items }) => {
+      await queryClient.cancelQueries({ queryKey: ["concerts", concertId] });
+      const previousConcert = queryClient.getQueryData<Concert>(["concerts", concertId]);
+
+      if (previousConcert?.setlistItems) {
+        const reorderedItems = items
+          .map((item, index) => {
+            const existing = previousConcert.setlistItems!.find((si) => si.id === item.id);
+            return existing ? { ...existing, order: index } : null;
+          })
+          .filter(Boolean);
+
+        queryClient.setQueryData<Concert>(["concerts", concertId], {
+          ...previousConcert,
+          setlistItems: reorderedItems as Concert["setlistItems"],
+        });
+      }
+
+      return { previousConcert };
+    },
+    onError: (_err, { concertId }, context) => {
+      if (context?.previousConcert) {
+        queryClient.setQueryData(["concerts", concertId], context.previousConcert);
+      }
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+    onSettled: (_, __, { concertId }) => {
+      queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
+    },
+  });
+}
+
+// Block CRUD hooks
+export function useAddBlockToConcert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ concertId, data }: { concertId: string; data: CreateBlockDto }) =>
+      api.addBlockToConcert(concertId, data),
+    onSuccess: (concert, { concertId }) => {
+      queryClient.invalidateQueries({ queryKey: ["concerts"] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", "event", concert.eventId] });
+      toast.success(TOAST_MESSAGES.BLOCK_ADDED_TO_CONCERT);
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}
+
+export function useUpdateConcertBlock() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ concertId, blockId, data }: { concertId: string; blockId: string; data: UpdateBlockDto }) =>
+      api.updateConcertBlock(concertId, blockId, data),
+    onSuccess: (concert, { concertId }) => {
+      queryClient.invalidateQueries({ queryKey: ["concerts"] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", "event", concert.eventId] });
+      toast.success(TOAST_MESSAGES.BLOCK_UPDATED);
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}
+
+export function useRemoveBlockFromConcert() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ concertId, blockId }: { concertId: string; blockId: string }) =>
+      api.removeBlockFromConcert(concertId, blockId),
+    onSuccess: (concert, { concertId }) => {
+      queryClient.invalidateQueries({ queryKey: ["concerts"] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", concertId] });
+      queryClient.invalidateQueries({ queryKey: ["concerts", "event", concert.eventId] });
+      toast.success(TOAST_MESSAGES.BLOCK_REMOVED);
     },
     onError: () => {
       toast.error(TOAST_MESSAGES.ERROR_GENERIC);

@@ -30,6 +30,14 @@ enum AssetType {
   AUDIO
 }
 
+enum BlockType {
+  INTERLUDE      // Interludio
+  INTRODUCTION   // Introduccion
+  BREAK          // Descanso
+  TRANSITION     // Transicion
+  CUSTOM         // Personalizado
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -129,7 +137,8 @@ model Event {
   iconGradientFrom String?  // e.g., "red-600"
   iconGradientTo   String?  // e.g., "red-700"
 
-  eventSongs  EventSong[]  // Explicit junction for ordering
+  eventSongs  EventSong[]   // Explicit junction for ordering
+  eventBlocks EventBlock[]  // Non-song setlist items (interludes, breaks, etc.)
   concerts    Concert[]
 
   createdAt   DateTime @default(now())
@@ -163,7 +172,8 @@ model Concert {
   eventId     String
 
   // Explicit junction for songs with ordering
-  concertSongs ConcertSong[]
+  concertSongs  ConcertSong[]
+  concertBlocks ConcertBlock[]  // Non-song setlist items
 
   // Videos of this specific performance
   assets      Asset[]
@@ -186,6 +196,36 @@ model ConcertSong {
 
   @@unique([concertId, songId])
   @@map("concert_songs")
+}
+
+// Non-song setlist items for Events (interludes, breaks, introductions, etc.)
+model EventBlock {
+  id              String    @id @default(uuid())
+  eventId         String
+  type            BlockType @default(CUSTOM)
+  label           String
+  durationMinutes Int?
+  notes           String?
+  order           Int       @default(0)
+  event           Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+
+  @@map("event_blocks")
+}
+
+// Non-song setlist items for Concerts (interludes, breaks, introductions, etc.)
+model ConcertBlock {
+  id              String    @id @default(uuid())
+  concertId       String
+  type            BlockType @default(CUSTOM)
+  label           String
+  durationMinutes Int?
+  notes           String?
+  order           Int       @default(0)
+  concert         Concert   @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+
+  @@map("concert_blocks")
 }
 
 model Asset {

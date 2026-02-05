@@ -13,7 +13,11 @@ import { ConcertsService } from './concerts.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
 import { AddSongToConcertDto } from './dto/add-song.dto';
+import { AddSongsBulkDto } from './dto/add-songs-bulk.dto';
 import { ReorderSongsDto } from './dto/reorder-songs.dto';
+import { ReorderConcertSetlistDto } from './dto/reorder-setlist.dto';
+import { CreateConcertBlockDto } from './dto/create-block.dto';
+import { UpdateConcertBlockDto } from './dto/update-block.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -69,23 +73,59 @@ export class ConcertsController {
     return this.concertsService.addSong(id, addSongDto.songId);
   }
 
+  @Post(':id/songs/bulk')
+  @Roles(...CONCERT_ADMIN_ROLES)
+  addSongsBulk(@Param('id') id: string, @Body() dto: AddSongsBulkDto) {
+    return this.concertsService.addSongsBulk(id, dto.songIds);
+  }
+
   @Delete(':id/songs/:songId')
   @Roles(...CONCERT_ADMIN_ROLES)
   removeSong(@Param('id') id: string, @Param('songId') songId: string) {
     return this.concertsService.removeSong(id, songId);
   }
 
-  // Copy songs from parent event
+  // Copy songs and blocks from parent event
   @Post(':id/copy-from-event')
   @Roles(...CONCERT_ADMIN_ROLES)
   copyFromEvent(@Param('id') id: string) {
     return this.concertsService.copyFromEvent(id);
   }
 
-  // Reorder songs in setlist
+  // Reorder songs in setlist (legacy - songs only)
   @Patch(':id/songs/reorder')
   @Roles(...CONCERT_ADMIN_ROLES)
   reorderSongs(@Param('id') id: string, @Body() reorderSongsDto: ReorderSongsDto) {
     return this.concertsService.reorderSongs(id, reorderSongsDto.songIds);
+  }
+
+  // Unified setlist reorder (songs + blocks)
+  @Patch(':id/setlist/reorder')
+  @Roles(...CONCERT_ADMIN_ROLES)
+  reorderSetlist(@Param('id') id: string, @Body() dto: ReorderConcertSetlistDto) {
+    return this.concertsService.reorderSetlist(id, dto.items);
+  }
+
+  // Block management
+  @Post(':id/blocks')
+  @Roles(...CONCERT_ADMIN_ROLES)
+  addBlock(@Param('id') id: string, @Body() dto: CreateConcertBlockDto) {
+    return this.concertsService.addBlock(id, dto);
+  }
+
+  @Patch(':id/blocks/:blockId')
+  @Roles(...CONCERT_ADMIN_ROLES)
+  updateBlock(
+    @Param('id') id: string,
+    @Param('blockId') blockId: string,
+    @Body() dto: UpdateConcertBlockDto,
+  ) {
+    return this.concertsService.updateBlock(id, blockId, dto);
+  }
+
+  @Delete(':id/blocks/:blockId')
+  @Roles(...CONCERT_ADMIN_ROLES)
+  removeBlock(@Param('id') id: string, @Param('blockId') blockId: string) {
+    return this.concertsService.removeBlock(id, blockId);
   }
 }

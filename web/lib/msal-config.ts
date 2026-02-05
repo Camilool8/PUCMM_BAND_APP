@@ -16,7 +16,7 @@ export function getMsalConfig(): Configuration {
       postLogoutRedirectUri: window.location.origin,
     },
     cache: {
-      cacheLocation: "sessionStorage",
+      cacheLocation: "localStorage",
     },
     system: {
       loggerOptions: {

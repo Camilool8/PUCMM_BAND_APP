@@ -17,15 +17,21 @@ export const TOAST_MESSAGES = {
   EVENT_UPDATED: "Evento actualizado",
   EVENT_DELETED: "Evento eliminado",
   SONG_ADDED_TO_EVENT: "Cancion agregada al evento",
+  SONGS_ADDED_TO_EVENT_BULK: "Canciones agregadas al evento",
   SONG_REMOVED_FROM_EVENT: "Cancion removida del evento",
+  BLOCK_ADDED_TO_EVENT: "Bloque agregado al setlist",
+  BLOCK_UPDATED: "Bloque actualizado",
+  BLOCK_REMOVED: "Bloque removido del setlist",
 
   // Concerts
   CONCERT_CREATED: "Concierto creado exitosamente",
   CONCERT_UPDATED: "Concierto actualizado",
   CONCERT_DELETED: "Concierto eliminado",
   SONG_ADDED_TO_CONCERT: "Canción agregada al concierto",
+  SONGS_ADDED_TO_CONCERT_BULK: "Canciones agregadas al concierto",
   SONG_REMOVED_FROM_CONCERT: "Canción removida del concierto",
   SONGS_COPIED_FROM_EVENT: "Setlist copiado del evento",
+  BLOCK_ADDED_TO_CONCERT: "Bloque agregado al setlist",
 
   // Uploads
   UPLOAD_SUCCESS: "Archivo subido exitosamente",

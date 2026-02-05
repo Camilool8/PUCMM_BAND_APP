@@ -166,6 +166,42 @@ export interface CreateAssetDto {
 }
 
 // ============================================================================
+// Setlist Block Types
+// ============================================================================
+
+export type BlockType = "INTERLUDE" | "INTRODUCTION" | "BREAK" | "TRANSITION" | "CUSTOM";
+
+export interface SetlistBlock {
+  id: string;
+  type: BlockType;
+  label: string;
+  durationMinutes: number | null;
+  notes: string | null;
+}
+
+export interface SetlistItem {
+  id: string;
+  itemType: "song" | "block";
+  order: number;
+  song: Song | null;
+  block: SetlistBlock | null;
+}
+
+export interface CreateBlockDto {
+  type: BlockType;
+  label: string;
+  durationMinutes?: number;
+  notes?: string;
+}
+
+export interface UpdateBlockDto {
+  type?: BlockType;
+  label?: string;
+  durationMinutes?: number;
+  notes?: string;
+}
+
+// ============================================================================
 // Events Types
 // ============================================================================
 
@@ -186,10 +222,12 @@ export interface Event {
   updatedAt: string;
   // Relations
   songs?: Song[];
+  setlistItems?: SetlistItem[];
   concerts?: Concert[];
   _count?: {
     songs: number;
     concerts: number;
+    blocks?: number;
   };
 }
 
@@ -204,8 +242,10 @@ export interface Concert {
   // Relations
   event?: Event;
   songs?: Song[];
+  setlistItems?: SetlistItem[];
   _count?: {
     songs: number;
+    blocks?: number;
   };
 }
 
@@ -592,6 +632,40 @@ class ApiClient {
     });
   }
 
+  async addSongsToEventBulk(eventId: string, songIds: string[]): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/songs/bulk`, {
+      method: "POST",
+      body: JSON.stringify({ songIds }),
+    });
+  }
+
+  async reorderEventSetlist(eventId: string, items: { id: string; itemType: "song" | "block" }[]): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/setlist/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ items }),
+    });
+  }
+
+  async addBlockToEvent(eventId: string, data: CreateBlockDto): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/blocks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEventBlock(eventId: string, blockId: string, data: UpdateBlockDto): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/blocks/${blockId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeBlockFromEvent(eventId: string, blockId: string): Promise<Event> {
+    return this.request<Event>(`/events/${eventId}/blocks/${blockId}`, {
+      method: "DELETE",
+    });
+  }
+
   // ============================================================================
   // Concerts
   // ============================================================================
@@ -649,6 +723,40 @@ class ApiClient {
     return this.request<Concert>(`/concerts/${concertId}/songs/reorder`, {
       method: "PATCH",
       body: JSON.stringify({ songIds }),
+    });
+  }
+
+  async addSongsToConcertBulk(concertId: string, songIds: string[]): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/songs/bulk`, {
+      method: "POST",
+      body: JSON.stringify({ songIds }),
+    });
+  }
+
+  async reorderConcertSetlist(concertId: string, items: { id: string; itemType: "song" | "block" }[]): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/setlist/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ items }),
+    });
+  }
+
+  async addBlockToConcert(concertId: string, data: CreateBlockDto): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/blocks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateConcertBlock(concertId: string, blockId: string, data: UpdateBlockDto): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/blocks/${blockId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeBlockFromConcert(concertId: string, blockId: string): Promise<Concert> {
+    return this.request<Concert>(`/concerts/${concertId}/blocks/${blockId}`, {
+      method: "DELETE",
     });
   }
 
@@ -739,6 +847,11 @@ class ApiClientProxy {
   addSongToEvent = (eventId: string, songId: string) => this.client.addSongToEvent(eventId, songId);
   removeSongFromEvent = (eventId: string, songId: string) => this.client.removeSongFromEvent(eventId, songId);
   reorderEventSongs = (eventId: string, songIds: string[]) => this.client.reorderEventSongs(eventId, songIds);
+  addSongsToEventBulk = (eventId: string, songIds: string[]) => this.client.addSongsToEventBulk(eventId, songIds);
+  reorderEventSetlist = (eventId: string, items: { id: string; itemType: "song" | "block" }[]) => this.client.reorderEventSetlist(eventId, items);
+  addBlockToEvent = (eventId: string, data: CreateBlockDto) => this.client.addBlockToEvent(eventId, data);
+  updateEventBlock = (eventId: string, blockId: string, data: UpdateBlockDto) => this.client.updateEventBlock(eventId, blockId, data);
+  removeBlockFromEvent = (eventId: string, blockId: string) => this.client.removeBlockFromEvent(eventId, blockId);
   getConcerts = () => this.client.getConcerts();
   getConcertsByEvent = (eventId: string) => this.client.getConcertsByEvent(eventId);
   getConcert = (id: string) => this.client.getConcert(id);
@@ -749,6 +862,11 @@ class ApiClientProxy {
   removeSongFromConcert = (concertId: string, songId: string) => this.client.removeSongFromConcert(concertId, songId);
   copyEventSongsToConcert = (concertId: string) => this.client.copyEventSongsToConcert(concertId);
   reorderConcertSongs = (concertId: string, songIds: string[]) => this.client.reorderConcertSongs(concertId, songIds);
+  addSongsToConcertBulk = (concertId: string, songIds: string[]) => this.client.addSongsToConcertBulk(concertId, songIds);
+  reorderConcertSetlist = (concertId: string, items: { id: string; itemType: "song" | "block" }[]) => this.client.reorderConcertSetlist(concertId, items);
+  addBlockToConcert = (concertId: string, data: CreateBlockDto) => this.client.addBlockToConcert(concertId, data);
+  updateConcertBlock = (concertId: string, blockId: string, data: UpdateBlockDto) => this.client.updateConcertBlock(concertId, blockId, data);
+  removeBlockFromConcert = (concertId: string, blockId: string) => this.client.removeBlockFromConcert(concertId, blockId);
   resolveMusicLink = (url: string) => this.client.resolveMusicLink(url);
   searchSongMetadata = (title: string, artist: string) => this.client.searchSongMetadata(title, artist);
   detectMusicPlatform = (url: string) => this.client.detectMusicPlatform(url);

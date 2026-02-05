@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -32,19 +32,32 @@ import {
   Upload,
   Trash2,
   Search,
+  Check,
+  Layers,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useConcert, useDeleteConcert, useAddSongToConcert, useRemoveSongFromConcert, useCopyEventSongsToConcert, useReorderConcertSongs } from "@/hooks/use-concerts";
+import {
+  useConcert,
+  useDeleteConcert,
+  useAddSongToConcert,
+  useAddSongsToConcertBulk,
+  useRemoveSongFromConcert,
+  useCopyEventSongsToConcert,
+  useReorderConcertSetlist,
+  useAddBlockToConcert,
+  useRemoveBlockFromConcert,
+} from "@/hooks/use-concerts";
 import { useSongs } from "@/hooks/use-songs";
 import { useConcertAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-upload";
 import SongDetailModal from "@/components/SongDetailModal";
 import CreateConcertModal from "@/components/CreateConcertModal";
 import MediaGallery from "@/components/MediaGallery";
 import SortableSongItem from "@/components/SortableSongItem";
+import SortableBlockItem, { BLOCK_LABELS } from "@/components/SortableBlockItem";
 import { FileDropzone } from "@/components/ui/FileDropzone";
-import type { Concert, Song, AssetType } from "@/lib/api";
+import type { Concert, Song, AssetType, SetlistItem, BlockType } from "@/lib/api";
 import { env } from "@/lib/env";
-import { formatDuration, calculateSetlistDuration, hasDurationData } from "@/lib/utils";
+import { formatDuration } from "@/lib/utils";
 import Link from "next/link";
 
 interface ConcertContentProps {
@@ -52,14 +65,45 @@ interface ConcertContentProps {
   onBack: () => void;
 }
 
+function calculateSetlistItemsDuration(items: SetlistItem[]): number {
+  return items.reduce((total, item) => {
+    if (item.itemType === "song" && item.song?.durationMs) {
+      return total + item.song.durationMs;
+    }
+    if (item.itemType === "block" && item.block?.durationMinutes) {
+      return total + item.block.durationMinutes * 60 * 1000;
+    }
+    return total;
+  }, 0);
+}
+
+function hasSetlistDurationData(items: SetlistItem[]): boolean {
+  return items.some(
+    (item) =>
+      (item.itemType === "song" && item.song?.durationMs && item.song.durationMs > 0) ||
+      (item.itemType === "block" && item.block?.durationMinutes && item.block.durationMinutes > 0)
+  );
+}
+
+const BLOCK_TYPES: { value: BlockType; label: string }[] = [
+  { value: "INTERLUDE", label: "Interludio" },
+  { value: "INTRODUCTION", label: "Introduccion" },
+  { value: "BREAK", label: "Descanso" },
+  { value: "TRANSITION", label: "Transicion" },
+  { value: "CUSTOM", label: "Personalizado" },
+];
+
 export default function ConcertContent({ concert, onBack }: ConcertContentProps) {
   const { canManageEvents, canUploadMedia, canDeleteAssets } = useAuth();
   const { data: fullConcert } = useConcert(concert.id);
   const { data: allSongs } = useSongs();
   const deleteConcert = useDeleteConcert();
   const addSongToConcert = useAddSongToConcert();
+  const addSongsBulk = useAddSongsToConcertBulk();
   const removeSongFromConcert = useRemoveSongFromConcert();
   const copySongsFromEvent = useCopyEventSongsToConcert();
+  const addBlockToConcert = useAddBlockToConcert();
+  const removeBlockFromConcert = useRemoveBlockFromConcert();
 
   // Media gallery hooks
   const { data: assets = [] } = useConcertAssets(concert.id);
@@ -67,13 +111,19 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   const deleteAsset = useDeleteAsset();
 
   const [showAddSong, setShowAddSong] = useState(false);
+  const [showAddBlock, setShowAddBlock] = useState(false);
   const [songSearchQuery, setSongSearchQuery] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUploadMedia, setShowUploadMedia] = useState(false);
+  const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(new Set());
+  const [blockType, setBlockType] = useState<BlockType>("INTERLUDE");
+  const [blockLabel, setBlockLabel] = useState("");
+  const [blockDuration, setBlockDuration] = useState("");
 
   const displayConcert = fullConcert || concert;
+  const setlistItems = displayConcert.setlistItems || [];
   const concertSongs = displayConcert.songs || [];
   const concertDate = new Date(displayConcert.date);
   const isUpcoming = concertDate >= new Date();
@@ -81,27 +131,37 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   // Get event songs count for reference
   const eventSongsCount = displayConcert.event?.songs?.length || displayConcert.event?._count?.songs || 0;
 
-
   // Filter out songs already in the concert and apply search
-  const availableSongs = allSongs?.filter(
-    (song) => {
-      // Filter out songs already in concert
-      if (concertSongs.some((cs) => cs.id === song.id)) return false;
-
-      // Apply search filter
+  const songIdsInConcert = useMemo(() => new Set(concertSongs.map((s) => s.id)), [concertSongs]);
+  const availableSongs = useMemo(() =>
+    allSongs?.filter((song) => {
+      if (songIdsInConcert.has(song.id)) return false;
       if (songSearchQuery) {
         const query = songSearchQuery.toLowerCase();
-        return (
-          song.title.toLowerCase().includes(query) ||
-          song.artist.toLowerCase().includes(query)
-        );
+        return song.title.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query);
       }
       return true;
-    }
-  ) || [];
+    }) || [],
+    [allSongs, songIdsInConcert, songSearchQuery]
+  );
 
-  const handleAddSong = async (songId: string) => {
-    await addSongToConcert.mutateAsync({ concertId: concert.id, songId });
+  const toggleSongSelection = (songId: string) => {
+    setSelectedSongIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(songId)) next.delete(songId);
+      else next.add(songId);
+      return next;
+    });
+  };
+
+  const handleBulkAdd = async () => {
+    const songIds = Array.from(selectedSongIds);
+    if (songIds.length === 1) {
+      await addSongToConcert.mutateAsync({ concertId: concert.id, songId: songIds[0] });
+    } else {
+      await addSongsBulk.mutateAsync({ concertId: concert.id, songIds });
+    }
+    setSelectedSongIds(new Set());
     setSongSearchQuery("");
     setShowAddSong(false);
   };
@@ -109,6 +169,23 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
   const handleRemoveSong = async (songId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     await removeSongFromConcert.mutateAsync({ concertId: concert.id, songId });
+  };
+
+  const handleRemoveBlock = async (blockId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await removeBlockFromConcert.mutateAsync({ concertId: concert.id, blockId });
+  };
+
+  const handleAddBlock = async () => {
+    const label = blockLabel.trim() || BLOCK_LABELS[blockType];
+    const durationMinutes = blockDuration ? parseInt(blockDuration, 10) : undefined;
+    await addBlockToConcert.mutateAsync({
+      concertId: concert.id,
+      data: { type: blockType, label, durationMinutes },
+    });
+    setBlockLabel("");
+    setBlockDuration("");
+    setShowAddBlock(false);
   };
 
   const handleCopyFromEvent = async () => {
@@ -139,34 +216,30 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
     await deleteAsset.mutateAsync(assetId);
   };
 
-  // Drag-and-drop setup
-  const reorderSongs = useReorderConcertSongs();
+  // Drag-and-drop with optimistic reorder
+  const reorderSetlist = useReorderConcertSetlist();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  const handleDragEnd = (dragEvent: DragEndEvent) => {
+    const { active, over } = dragEvent;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = concertSongs.findIndex((s) => s.id === active.id);
-    const newIndex = concertSongs.findIndex((s) => s.id === over.id);
+    const oldIndex = setlistItems.findIndex((i) => i.id === active.id);
+    const newIndex = setlistItems.findIndex((i) => i.id === over.id);
 
     if (oldIndex !== -1 && newIndex !== -1) {
-      const newOrder = arrayMove(concertSongs, oldIndex, newIndex);
-      const songIds = newOrder.map((s) => s.id);
-      await reorderSongs.mutateAsync({ concertId: concert.id, songIds });
+      const newOrder = arrayMove(setlistItems, oldIndex, newIndex);
+      const items = newOrder.map((i) => ({ id: i.id, itemType: i.itemType }));
+      reorderSetlist.mutate({ concertId: concert.id, items });
     }
   };
+
+  const isAdding = addSongToConcert.isPending || addSongsBulk.isPending;
 
   return (
     <div className="space-y-4 md:space-y-6 animate-fade-in">
@@ -219,15 +292,15 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
       {/* Stats */}
       <div className={`grid gap-2 md:gap-4 ${eventSongsCount > 0 ? 'grid-cols-3' : 'grid-cols-2'}`}>
         <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
-          <div className="text-xl md:text-3xl font-bold text-white">{concertSongs.length}</div>
-          <div className="text-[10px] md:text-sm text-gray-400 mt-1">Canciones</div>
+          <div className="text-xl md:text-3xl font-bold text-white">{setlistItems.length}</div>
+          <div className="text-[10px] md:text-sm text-gray-400 mt-1">Items</div>
         </div>
         <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
           <div className="flex items-center justify-center gap-1 text-xl md:text-3xl font-bold text-white">
             <Clock size={16} className="text-gray-500 md:w-5 md:h-5" />
-            <span>{hasDurationData(concertSongs) ? formatDuration(calculateSetlistDuration(concertSongs)) : "--"}</span>
+            <span>{hasSetlistDurationData(setlistItems) ? formatDuration(calculateSetlistItemsDuration(setlistItems)) : "--"}</span>
           </div>
-          <div className="text-[10px] md:text-sm text-gray-400 mt-1">Duración</div>
+          <div className="text-[10px] md:text-sm text-gray-400 mt-1">Duracion</div>
         </div>
         {eventSongsCount > 0 && (
           <div className="bg-surface-100/50 p-3 md:p-4 rounded-xl border border-surface-200/50 text-center">
@@ -240,32 +313,48 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
       {/* Setlist Section */}
       <div data-tour="concert-setlist" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
-              <Music size={14} className="text-brand-yellow sm:w-4 sm:h-4" />
-            </div>
-            Setlist
-            {concertSongs.length > 0 && (
-              <span className="text-[10px] sm:text-xs text-gray-500 font-normal ml-1">
-                ({concertSongs.length} {concertSongs.length === 1 ? "canción" : "canciones"})
-              </span>
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-brand-yellow/20 flex items-center justify-center">
+                <Music size={14} className="text-brand-yellow sm:w-4 sm:h-4" />
+              </div>
+              Setlist
+            </h3>
+            {setlistItems.length > 0 && (
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-gray-500 bg-surface-100/50 px-2 py-1 rounded-full">
+                <span>{setlistItems.length}</span>
+                {hasSetlistDurationData(setlistItems) && (
+                  <>
+                    <span>-</span>
+                    <Clock size={10} className="sm:w-3 sm:h-3" />
+                    <span>{formatDuration(calculateSetlistItemsDuration(setlistItems))}</span>
+                  </>
+                )}
+              </div>
             )}
-          </h3>
-          {canManageEvents && !showAddSong && (
-            <div className="flex items-center gap-2">
-              {concertSongs.length === 0 && eventSongsCount > 0 && (
+          </div>
+          {canManageEvents && !showAddSong && !showAddBlock && (
+            <div className="flex items-center gap-1.5">
+              {setlistItems.length === 0 && eventSongsCount > 0 && (
                 <button
                   onClick={handleCopyFromEvent}
                   disabled={copySongsFromEvent.isPending}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-50"
+                  className="flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5 disabled:opacity-50"
                 >
                   <Copy size={14} />
                   <span>Copiar</span>
                 </button>
               )}
               <button
+                onClick={() => setShowAddBlock(true)}
+                className="flex items-center justify-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/5"
+              >
+                <Layers size={14} />
+                <span className="hidden sm:inline">Bloque</span>
+              </button>
+              <button
                 onClick={() => setShowAddSong(true)}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-2 rounded-lg hover:bg-brand-yellow/10"
+                className="flex items-center justify-center gap-1.5 text-sm text-brand-yellow hover:text-brand-yellow/80 transition-colors px-3 py-2 rounded-lg hover:bg-brand-yellow/10"
               >
                 <Plus size={16} />
                 <span>Agregar</span>
@@ -274,14 +363,68 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
           )}
         </div>
 
-        {/* Add Song Selector with Search */}
+        {/* Add Block Form */}
+        {showAddBlock && (
+          <div className="mb-4 p-3 sm:p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-gray-400">Agregar bloque:</span>
+              <button onClick={() => setShowAddBlock(false)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-2 flex-wrap">
+                {BLOCK_TYPES.map((bt) => (
+                  <button
+                    key={bt.value}
+                    onClick={() => { setBlockType(bt.value); if (!blockLabel) setBlockLabel(bt.label); }}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                      blockType === bt.value
+                        ? "border-brand-yellow/50 bg-brand-yellow/10 text-brand-yellow"
+                        : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                    }`}
+                  >
+                    {bt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={blockLabel}
+                  onChange={(e) => setBlockLabel(e.target.value)}
+                  placeholder={BLOCK_LABELS[blockType]}
+                  className="flex-1 bg-surface-100 border border-surface-200 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/20 outline-none transition-all"
+                />
+                <input
+                  type="number"
+                  value={blockDuration}
+                  onChange={(e) => setBlockDuration(e.target.value)}
+                  placeholder="min"
+                  min="1"
+                  className="w-20 bg-surface-100 border border-surface-200 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/20 outline-none transition-all"
+                />
+              </div>
+              <button
+                onClick={handleAddBlock}
+                disabled={addBlockToConcert.isPending}
+                className="w-full px-4 py-2 bg-brand-yellow text-black text-sm font-medium rounded-lg hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
+              >
+                {addBlockToConcert.isPending ? "Agregando..." : "Agregar bloque"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Add Song Selector with Multi-Select */}
         {showAddSong && (
           <div className="mb-4 p-3 sm:p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-gray-400">Agregar canción:</span>
+              <span className="text-sm text-gray-400">Agregar canciones:</span>
               <button
                 onClick={() => {
                   setSongSearchQuery("");
+                  setSelectedSongIds(new Set());
                   setShowAddSong(false);
                 }}
                 className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
@@ -297,7 +440,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                 type="text"
                 value={songSearchQuery}
                 onChange={(e) => setSongSearchQuery(e.target.value)}
-                placeholder="Buscar canción o artista..."
+                placeholder="Buscar cancion o artista..."
                 className="w-full bg-surface-100 border border-surface-200 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-1 focus:ring-brand-yellow/20 outline-none transition-all"
                 autoFocus
               />
@@ -314,12 +457,18 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
             {availableSongs.length > 0 ? (
               <div className="max-h-64 overflow-y-auto space-y-1 scrollbar-hide">
                 {availableSongs.map((song) => (
-                  <button
+                  <div
                     key={song.id}
-                    onClick={() => handleAddSong(song.id)}
-                    disabled={addSongToConcert.isPending}
-                    className="w-full flex items-center gap-3 p-2 sm:p-2.5 rounded-lg hover:bg-white/5 active:bg-white/10 text-left transition-all disabled:opacity-50"
+                    onClick={() => toggleSongSelection(song.id)}
+                    className={`w-full flex items-center gap-3 p-2 sm:p-2.5 rounded-lg hover:bg-white/5 active:bg-white/10 text-left transition-all cursor-pointer ${
+                      selectedSongIds.has(song.id) ? "bg-brand-yellow/10 border border-brand-yellow/30" : "border border-transparent"
+                    }`}
                   >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      selectedSongIds.has(song.id) ? "bg-brand-yellow border-brand-yellow" : "border-gray-600"
+                    }`}>
+                      {selectedSongIds.has(song.id) && <Check size={12} className="text-black" />}
+                    </div>
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-surface-200 flex items-center justify-center shrink-0 overflow-hidden">
                       {song.coverUrl ? (
                         <img src={song.coverUrl} alt="" className="w-full h-full object-cover" />
@@ -331,8 +480,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                       <p className="text-sm text-white truncate">{song.title}</p>
                       <p className="text-xs text-gray-500 truncate">{song.artist}</p>
                     </div>
-                    <Plus size={16} className="text-brand-yellow shrink-0" />
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -340,33 +488,54 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                 {songSearchQuery ? "No se encontraron canciones" : "No hay canciones disponibles"}
               </p>
             )}
+
+            {selectedSongIds.size > 0 && (
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+                <span className="text-sm text-gray-400">
+                  {selectedSongIds.size} seleccionada{selectedSongIds.size > 1 ? "s" : ""}
+                </span>
+                <button
+                  onClick={handleBulkAdd}
+                  disabled={isAdding}
+                  className="px-4 py-2 bg-brand-yellow text-black text-sm font-medium rounded-lg hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
+                >
+                  {isAdding ? "Agregando..." : "Agregar seleccionadas"}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Songs List with Drag-Drop */}
-        {concertSongs.length > 0 ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={concertSongs.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
-            >
+        {/* Setlist Items (songs + blocks) */}
+        {setlistItems.length > 0 ? (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={setlistItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <div className="space-y-1">
-                {concertSongs.map((song, index) => (
-                  <SortableSongItem
-                    key={song.id}
-                    song={song}
-                    index={index}
-                    onSongClick={handleSongClick}
-                    onRemove={handleRemoveSong}
-                    isRemoving={removeSongFromConcert.isPending}
-                    canReorder={canManageEvents}
-                    canRemove={canManageEvents}
-                  />
-                ))}
+                {setlistItems.map((item, index) =>
+                  item.itemType === "song" && item.song ? (
+                    <SortableSongItem
+                      key={item.id}
+                      song={item.song}
+                      index={index}
+                      onSongClick={handleSongClick}
+                      onRemove={handleRemoveSong}
+                      isRemoving={removeSongFromConcert.isPending}
+                      canReorder={canManageEvents}
+                      canRemove={canManageEvents}
+                    />
+                  ) : item.itemType === "block" && item.block ? (
+                    <SortableBlockItem
+                      key={item.id}
+                      block={item.block}
+                      sortableId={item.id}
+                      index={index}
+                      onRemove={handleRemoveBlock}
+                      isRemoving={removeBlockFromConcert.isPending}
+                      canReorder={canManageEvents}
+                      canRemove={canManageEvents}
+                    />
+                  ) : null
+                )}
               </div>
             </SortableContext>
           </DndContext>

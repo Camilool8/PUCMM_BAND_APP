@@ -14,7 +14,11 @@ import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { AddSongDto } from './dto/add-song.dto';
+import { AddSongsBulkDto } from './dto/add-songs-bulk.dto';
 import { ReorderSongsDto } from './dto/reorder-songs.dto';
+import { ReorderSetlistDto } from './dto/reorder-setlist.dto';
+import { CreateBlockDto } from './dto/create-block.dto';
+import { UpdateBlockDto } from './dto/update-block.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { Role } from '@prisma/client';
 
@@ -73,6 +77,7 @@ export class EventsController {
     return this.eventsService.remove(id);
   }
 
+  // Song management
   @Post(':id/songs')
   addSong(
     @Param('id') id: string,
@@ -86,6 +91,21 @@ export class EventsController {
       );
     }
     return this.eventsService.addSong(id, addSongDto.songId);
+  }
+
+  @Post(':id/songs/bulk')
+  addSongsBulk(
+    @Param('id') id: string,
+    @Body() dto: AddSongsBulkDto,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden agregar canciones a eventos',
+      );
+    }
+    return this.eventsService.addSongsBulk(id, dto.songIds);
   }
 
   @Delete(':id/songs/:songId')
@@ -116,5 +136,68 @@ export class EventsController {
       );
     }
     return this.eventsService.reorderSongs(id, reorderSongsDto.songIds);
+  }
+
+  // Unified setlist reorder (songs + blocks)
+  @Patch(':id/setlist/reorder')
+  reorderSetlist(
+    @Param('id') id: string,
+    @Body() dto: ReorderSetlistDto,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden reordenar el setlist',
+      );
+    }
+    return this.eventsService.reorderSetlist(id, dto.items);
+  }
+
+  // Block management
+  @Post(':id/blocks')
+  addBlock(
+    @Param('id') id: string,
+    @Body() dto: CreateBlockDto,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden agregar bloques a eventos',
+      );
+    }
+    return this.eventsService.addBlock(id, dto);
+  }
+
+  @Patch(':id/blocks/:blockId')
+  updateBlock(
+    @Param('id') id: string,
+    @Param('blockId') blockId: string,
+    @Body() dto: UpdateBlockDto,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden editar bloques',
+      );
+    }
+    return this.eventsService.updateBlock(id, blockId, dto);
+  }
+
+  @Delete(':id/blocks/:blockId')
+  removeBlock(
+    @Param('id') id: string,
+    @Param('blockId') blockId: string,
+    @Request() req,
+  ) {
+    const user = req.user.dbUser;
+    if (!EVENT_ADMIN_ROLES.includes(user.role)) {
+      throw new ForbiddenException(
+        'Solo los administradores pueden remover bloques de eventos',
+      );
+    }
+    return this.eventsService.removeBlock(id, blockId);
   }
 }
