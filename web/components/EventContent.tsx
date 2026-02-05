@@ -406,6 +406,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
                     <SortableSongItem
                       key={item.id}
                       song={item.song}
+                      sortableId={item.id}
                       index={index}
                       onSongClick={handleSongClick}
                       onRemove={handleRemoveSong}

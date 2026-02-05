@@ -8,6 +8,7 @@ import type { Song } from "@/lib/api";
 
 interface SortableSongItemProps {
   song: Song;
+  sortableId?: string;
   index: number;
   onSongClick: (song: Song) => void;
   onRemove?: (songId: string, e: React.MouseEvent) => void;
@@ -18,6 +19,7 @@ interface SortableSongItemProps {
 
 export default function SortableSongItem({
   song,
+  sortableId,
   index,
   onSongClick,
   onRemove,
@@ -32,7 +34,7 @@ export default function SortableSongItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: song.id });
+  } = useSortable({ id: sortableId || song.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),

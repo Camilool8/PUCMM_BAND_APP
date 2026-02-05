@@ -516,6 +516,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                     <SortableSongItem
                       key={item.id}
                       song={item.song}
+                      sortableId={item.id}
                       index={index}
                       onSongClick={handleSongClick}
                       onRemove={handleRemoveSong}
