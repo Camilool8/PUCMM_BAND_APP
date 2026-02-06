@@ -71,9 +71,10 @@ export interface Song {
   // Events this song belongs to
   eventSongs?: { event: SongEvent }[];
   // Votes
-  votes?: { userId: string; user: SongVoter }[];
+  votes?: { userId: string; isGolden: boolean; user: SongVoter }[];
   _count?: {
     votes: number;
+    goldenVotes: number;
   };
   // Optional relations
   assets?: Asset[];
@@ -92,6 +93,11 @@ export interface DuplicateCheckResult {
 }
 
 export type SongStatus = "PENDING" | "REHEARSING" | "READY" | "ARCHIVED";
+
+export interface MyVote {
+  songId: string;
+  isGolden: boolean;
+}
 
 export interface CreateSongDto {
   title: string;
@@ -432,8 +438,20 @@ class ApiClient {
     });
   }
 
-  async getMyVotes(): Promise<string[]> {
-    return this.request<string[]>("/songs/my-votes");
+  async getMyVotes(): Promise<MyVote[]> {
+    return this.request<MyVote[]>("/songs/my-votes");
+  }
+
+  async addGoldenVote(songId: string): Promise<{ voteCount: number; goldenVoteCount: number }> {
+    return this.request<{ voteCount: number; goldenVoteCount: number }>(`/songs/${songId}/golden-vote`, {
+      method: "POST",
+    });
+  }
+
+  async removeGoldenVote(songId: string): Promise<{ voteCount: number; goldenVoteCount: number }> {
+    return this.request<{ voteCount: number; goldenVoteCount: number }>(`/songs/${songId}/golden-vote`, {
+      method: "DELETE",
+    });
   }
 
   // Song Lead Vocals
@@ -446,6 +464,13 @@ class ApiClient {
   async removeLeadVocal(songId: string, userId: string): Promise<Song> {
     return this.request<Song>(`/songs/${songId}/lead-vocals/${userId}`, {
       method: "DELETE",
+    });
+  }
+
+  async setLeadVocals(songId: string, userIds: string[]): Promise<Song> {
+    return this.request<Song>(`/songs/${songId}/lead-vocals`, {
+      method: "POST",
+      body: JSON.stringify({ userIds }),
     });
   }
 
@@ -822,6 +847,9 @@ class ApiClientProxy {
   getMyVotes = () => this.client.getMyVotes();
   addLeadVocal = (songId: string, userId: string) => this.client.addLeadVocal(songId, userId);
   removeLeadVocal = (songId: string, userId: string) => this.client.removeLeadVocal(songId, userId);
+  addGoldenVote = (songId: string) => this.client.addGoldenVote(songId);
+  removeGoldenVote = (songId: string) => this.client.removeGoldenVote(songId);
+  setLeadVocals = (songId: string, userIds: string[]) => this.client.setLeadVocals(songId, userIds);
   checkDuplicate = (title: string, artist: string, isrc?: string) => this.client.checkDuplicate(title, artist, isrc);
   getMe = () => this.client.getMe();
   getUsers = () => this.client.getUsers();

@@ -45,7 +45,7 @@ export default function SuggestionModal({ isOpen, onClose }: SuggestionModalProp
 
   // Check if already voted for the duplicate
   const hasVotedForDuplicate = duplicateResult?.existingSong
-    ? myVotes.includes(duplicateResult.existingSong.id)
+    ? myVotes.some(v => v.songId === duplicateResult.existingSong!.id)
     : false;
 
   // Auto-resolve link when it looks valid

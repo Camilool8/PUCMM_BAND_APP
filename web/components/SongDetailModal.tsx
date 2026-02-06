@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
   Mic2,
@@ -23,13 +23,16 @@ import {
   Play,
   Video,
   Plus,
+  Search,
+  ThumbsUp,
+  Star,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import StatusBadge from "./StatusBadge";
 import { useAuth } from "@/hooks/use-auth";
-import { useUpdateSong, useDeleteSong, useAddLeadVocal, useRemoveLeadVocal } from "@/hooks/use-songs";
+import { useSong, useUpdateSong, useDeleteSong, useAddLeadVocal, useRemoveLeadVocal, useSetLeadVocals, useMyVotes, useVoteSong, useUnvoteSong, useAddGoldenVote, useRemoveGoldenVote } from "@/hooks/use-songs";
 import { useUsers } from "@/hooks/use-users";
 import { useSongAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-upload";
 import { useResolveMusicLink } from "@/hooks/use-music-metadata";
@@ -117,11 +120,21 @@ const STATUS_OPTIONS: {
 
 export default function SongDetailModal({ song, onClose }: SongDetailModalProps) {
   const router = useRouter();
-  const { canManageSongs, canUploadMedia, canDeleteAssets } = useAuth();
+  const { canManageSongs, canUploadMedia, canDeleteAssets, canVote } = useAuth();
+
+  // Fetch fresh song data to stay in sync after mutations (lead vocals, votes, etc.)
+  const { data: freshSong } = useSong(song?.id || "");
+  const displaySong = freshSong || song;
   const updateSong = useUpdateSong();
   const deleteSong = useDeleteSong();
   const addLeadVocal = useAddLeadVocal();
   const removeLeadVocal = useRemoveLeadVocal();
+  const setLeadVocals = useSetLeadVocals();
+  const { data: myVotes = [] } = useMyVotes();
+  const voteSong = useVoteSong();
+  const unvoteSong = useUnvoteSong();
+  const addGoldenVote = useAddGoldenVote();
+  const removeGoldenVote = useRemoveGoldenVote();
   const { data: assets = [], refetch: refetchAssets } = useSongAssets(song?.id || "");
   const { data: allUsers = [] } = useUsers();
   const createAsset = useCreateAsset();
@@ -151,6 +164,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
 
   // Lead vocal selector state
   const [showLeadVocalSelector, setShowLeadVocalSelector] = useState(false);
+  const [vocalSearchQuery, setVocalSearchQuery] = useState("");
+  const [pendingVocalIds, setPendingVocalIds] = useState<Set<string>>(new Set());
 
   // Asset upload state
   const [uploadingAssetName, setUploadingAssetName] = useState("");
@@ -163,8 +178,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
   const scoreAssets = assets.filter((a) => a.type === "SCORE");
   const videoAssets = assets.filter((a) => a.type === "VIDEO");
 
-  // Check if song has any music links
-  const hasMusicLinks = song?.spotifyUrl || song?.youtubeUrl || song?.appleMusicUrl;
+  // Check if displaySong has any music links
+  const hasMusicLinks = displaySong?.spotifyUrl || displaySong?.youtubeUrl || displaySong?.appleMusicUrl;
 
   // Initialize edit values when song changes
   useEffect(() => {
@@ -216,16 +231,57 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
     }
   }, [linkToResolve]);
 
-  if (!song) return null;
+  // Filter users for lead vocal selector
+  const filteredVocalUsers = useMemo(() => {
+    if (!vocalSearchQuery) return allUsers;
+    const q = vocalSearchQuery.toLowerCase();
+    return allUsers.filter(
+      (u: DbUser) =>
+        (u.name && u.name.toLowerCase().includes(q)) ||
+        u.email.toLowerCase().includes(q)
+    );
+  }, [allUsers, vocalSearchQuery]);
+
+  // Vote state
+  const hasVoted = displaySong ? myVotes.some(v => v.songId === displaySong.id) : false;
+  const hasGoldenVote = displaySong ? myVotes.some(v => v.songId === displaySong.id && v.isGolden) : false;
+  const hasGoldenVoteOnOther = myVotes.some(v => v.isGolden && v.songId !== displaySong?.id);
+
+  const handleOpenVocalSelector = () => {
+    setPendingVocalIds(new Set(displaySong?.leadVocals?.map((v) => v.id) || []));
+    setVocalSearchQuery("");
+    setShowLeadVocalSelector(true);
+  };
+
+  const handleToggleVocal = (userId: string) => {
+    setPendingVocalIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  };
+
+  const handleSaveVocals = () => {
+    if (displaySong) {
+      setLeadVocals.mutate({ songId: displaySong.id, userIds: Array.from(pendingVocalIds) });
+    }
+    setShowLeadVocalSelector(false);
+  };
+
+  if (!song || !displaySong) return null;
 
   const handleStatusChange = async (newStatus: SongStatus) => {
     setCurrentStatus(newStatus);
-    await updateSong.mutateAsync({ id: song.id, data: { status: newStatus } });
+    await updateSong.mutateAsync({ id: displaySong.id, data: { status: newStatus } });
   };
 
   const handleSaveEdit = async () => {
     await updateSong.mutateAsync({
-      id: song.id,
+      id: displaySong.id,
       data: {
         title: editTitle,
         artist: editArtist,
@@ -242,20 +298,20 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
   };
 
   const handleCancelEdit = () => {
-    setEditTitle(song.title);
-    setEditArtist(song.artist);
-    setEditBpm(song.bpm?.toString() || "");
-    setEditKey(song.key || "");
-    setEditSpotifyUrl(song.spotifyUrl || "");
-    setEditYoutubeUrl(song.youtubeUrl || "");
-    setEditAppleMusicUrl(song.appleMusicUrl || "");
-    setEditCoverUrl(song.coverUrl || "");
+    setEditTitle(displaySong.title);
+    setEditArtist(displaySong.artist);
+    setEditBpm(displaySong.bpm?.toString() || "");
+    setEditKey(displaySong.key || "");
+    setEditSpotifyUrl(displaySong.spotifyUrl || "");
+    setEditYoutubeUrl(displaySong.youtubeUrl || "");
+    setEditAppleMusicUrl(displaySong.appleMusicUrl || "");
+    setEditCoverUrl(displaySong.coverUrl || "");
     setIsEditing(false);
     setLinkToResolve("");
   };
 
   const handleDelete = async () => {
-    await deleteSong.mutateAsync(song.id);
+    await deleteSong.mutateAsync(displaySong.id);
     onClose();
   };
 
@@ -275,7 +331,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
       url: fullUrl,
       name: uploadingAssetName || response.file.originalName,
       instrumentTag: uploadingInstrumentTag || undefined,
-      songId: song.id,
+      songId: displaySong.id,
     });
     setUploadingAssetName("");
     setUploadingInstrumentTag("");
@@ -288,7 +344,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
       type: "VIDEO",
       url: fullUrl,
       name: uploadingAssetName || response.file.originalName,
-      songId: song.id,
+      songId: displaySong.id,
     });
     setUploadingAssetName("");
     refetchAssets();
@@ -309,11 +365,11 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
         {/* Custom Header with Cover Art */}
         <div data-tour="song-detail-header" className="relative h-44 md:h-52 bg-linear-to-b from-brand-blue-primary/60 via-brand-blue-primary/30 to-transparent shrink-0">
           {/* Background blur effect */}
-          {(editCoverUrl || song.coverUrl) && (
+          {(editCoverUrl || displaySong.coverUrl) && (
             <div
               className="absolute inset-0 opacity-30 blur-2xl scale-110"
               style={{
-                backgroundImage: `url(${editCoverUrl || song.coverUrl})`,
+                backgroundImage: `url(${editCoverUrl || displaySong.coverUrl})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -342,8 +398,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
           <div className="absolute inset-x-0 bottom-0 flex items-end gap-4 md:gap-6 p-5 md:p-6">
             {/* Album Cover */}
             <div className="w-28 h-28 md:w-36 md:h-36 rounded-xl md:rounded-2xl shadow-2xl border-2 border-white/10 overflow-hidden bg-surface-100 shrink-0 ring-1 ring-black/20">
-              {(editCoverUrl || song.coverUrl) ? (
-                <img src={editCoverUrl || song.coverUrl || ""} alt={song.title} className="w-full h-full object-cover" />
+              {(editCoverUrl || displaySong.coverUrl) ? (
+                <img src={editCoverUrl || displaySong.coverUrl || ""} alt={displaySong.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-surface-100 to-surface-200">
                   <Music size={40} className="text-gray-500 md:w-12 md:h-12" />
@@ -388,23 +444,23 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
               ) : (
                 <>
                   <h2 className="text-2xl md:text-3xl font-black text-white mb-1 truncate drop-shadow-lg">
-                    {song.title}
+                    {displaySong.title}
                   </h2>
-                  <p className="text-base md:text-lg text-white/80 truncate">{song.artist}</p>
+                  <p className="text-base md:text-lg text-white/80 truncate">{displaySong.artist}</p>
                   <div className="flex gap-2 mt-3 flex-wrap">
-                    {song.bpm && (
+                    {displaySong.bpm && (
                       <span className="text-xs font-bold px-2.5 py-1 bg-brand-blue-primary/90 text-white rounded-full shadow-sm">
-                        {song.bpm} BPM
+                        {displaySong.bpm} BPM
                       </span>
                     )}
-                    {song.key && (
+                    {displaySong.key && (
                       <span className="text-xs font-bold px-2.5 py-1 bg-brand-yellow text-brand-blue-primary rounded-full shadow-sm">
-                        {song.key}
+                        {displaySong.key}
                       </span>
                     )}
-                    {song.durationMs && (
+                    {displaySong.durationMs && (
                       <span className="text-xs font-medium px-2.5 py-1 bg-white/10 text-white/80 rounded-full">
-                        {formatDurationFromMs(song.durationMs)}
+                        {formatDurationFromMs(displaySong.durationMs)}
                       </span>
                     )}
                   </div>
@@ -505,27 +561,27 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
           <div data-tour="song-platform-links" className="px-6 py-3 border-b border-white/5">
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500 mr-2">Escuchar en:</span>
-              {song.spotifyUrl && (
+              {displaySong.spotifyUrl && (
                 <button
-                  onClick={() => openMusicLink(song.spotifyUrl!)}
+                  onClick={() => openMusicLink(displaySong.spotifyUrl!)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1DB954]/10 hover:bg-[#1DB954]/20 text-[#1DB954] transition-all"
                 >
                   <SpotifyIcon className="w-4 h-4" />
                   <span className="text-sm font-medium">Spotify</span>
                 </button>
               )}
-              {song.youtubeUrl && (
+              {displaySong.youtubeUrl && (
                 <button
-                  onClick={() => openMusicLink(song.youtubeUrl!)}
+                  onClick={() => openMusicLink(displaySong.youtubeUrl!)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#FF0000]/10 hover:bg-[#FF0000]/20 text-[#FF0000] transition-all"
                 >
                   <YouTubeIcon className="w-4 h-4" />
                   <span className="text-sm font-medium">YouTube</span>
                 </button>
               )}
-              {song.appleMusicUrl && (
+              {displaySong.appleMusicUrl && (
                 <button
-                  onClick={() => openMusicLink(song.appleMusicUrl!)}
+                  onClick={() => openMusicLink(displaySong.appleMusicUrl!)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#FC3C44]/10 hover:bg-[#FC3C44]/20 text-[#FC3C44] transition-all"
                 >
                   <AppleMusicIcon className="w-4 h-4" />
@@ -628,9 +684,97 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                     })}
                   </div>
                 ) : (
-                  <StatusBadge status={song.status} />
+                  <StatusBadge status={displaySong.status} />
                 )}
               </div>
+
+              {/* Votes - Only for PENDING songs */}
+              {displaySong.status === "PENDING" && (
+                <div className="p-4 bg-surface-100/30 rounded-2xl border border-surface-200/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="flex items-center gap-2 text-white font-semibold">
+                      <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <ThumbsUp size={16} className="text-amber-400" />
+                      </div>
+                      Votos
+                      <span className="text-sm font-normal text-gray-400">
+                        ({displaySong._count?.votes || 0})
+                      </span>
+                      {(displaySong._count?.goldenVotes || 0) > 0 && (
+                        <span className="flex items-center gap-1 text-sm font-normal text-brand-yellow">
+                          <Star size={14} className="fill-brand-yellow" />
+                          {displaySong._count?.goldenVotes}
+                        </span>
+                      )}
+                    </h3>
+                  </div>
+
+                  {canVote && (
+                    <div className="flex items-center gap-2">
+                      {/* Normal vote button */}
+                      <button
+                        onClick={() => hasVoted && !hasGoldenVote
+                          ? unvoteSong.mutate(displaySong.id)
+                          : voteSong.mutate(displaySong.id)
+                        }
+                        disabled={voteSong.isPending || unvoteSong.isPending || hasGoldenVote}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          hasVoted
+                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                            : "bg-surface-200/50 text-gray-400 hover:text-white hover:bg-white/10 border border-surface-200"
+                        } disabled:opacity-50`}
+                      >
+                        <ThumbsUp size={14} className={hasVoted ? "fill-amber-400" : ""} />
+                        {hasVoted ? "Votado" : "Votar"}
+                      </button>
+
+                      {/* Golden vote button */}
+                      <button
+                        onClick={() => hasGoldenVote
+                          ? removeGoldenVote.mutate(displaySong.id)
+                          : addGoldenVote.mutate(displaySong.id)
+                        }
+                        disabled={addGoldenVote.isPending || removeGoldenVote.isPending}
+                        className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                          hasGoldenVote
+                            ? "bg-brand-yellow/20 text-brand-yellow border border-brand-yellow/40"
+                            : "bg-surface-200/50 text-gray-400 hover:text-brand-yellow hover:bg-brand-yellow/10 border border-surface-200"
+                        }`}
+                        title={hasGoldenVoteOnOther
+                          ? "Tu voto dorado se movera de la otra cancion a esta"
+                          : hasGoldenVote
+                          ? "Remover voto dorado"
+                          : "Asignar tu voto dorado (solo 1 disponible)"}
+                      >
+                        <Star size={14} className={hasGoldenVote ? "fill-brand-yellow" : ""} />
+                        {hasGoldenVote ? "Dorado" : "Voto Dorado"}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Show voter list for admins */}
+                  {canManageSongs && displaySong.votes && displaySong.votes.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-surface-200/50">
+                      <p className="text-xs text-gray-500 mb-2">Votantes:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {displaySong.votes.map((vote) => (
+                          <div
+                            key={vote.userId}
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
+                              vote.isGolden
+                                ? "bg-brand-yellow/10 text-brand-yellow border border-brand-yellow/20"
+                                : "bg-surface-200/50 text-gray-400"
+                            }`}
+                          >
+                            {vote.isGolden && <Star size={10} className="fill-brand-yellow" />}
+                            <span>{vote.user.name || "Usuario"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Lead Vocals */}
               <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30">
@@ -643,18 +787,18 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                   </h3>
                   {canManageSongs && (
                     <button
-                      onClick={() => setShowLeadVocalSelector(!showLeadVocalSelector)}
+                      onClick={showLeadVocalSelector ? () => setShowLeadVocalSelector(false) : handleOpenVocalSelector}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                     >
-                      <Plus size={16} />
+                      {showLeadVocalSelector ? <X size={16} /> : <Plus size={16} />}
                     </button>
                   )}
                 </div>
 
                 {/* Current lead vocals */}
-                {song.leadVocals && song.leadVocals.length > 0 ? (
+                {!showLeadVocalSelector && displaySong.leadVocals && displaySong.leadVocals.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {song.leadVocals.map((vocalist) => (
+                    {displaySong.leadVocals.map((vocalist) => (
                       <div
                         key={vocalist.id}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-yellow/10 border border-brand-yellow/20"
@@ -671,7 +815,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                         <span className="text-sm text-brand-yellow font-medium">{vocalist.name || "Usuario"}</span>
                         {canManageSongs && (
                           <button
-                            onClick={() => removeLeadVocal.mutate({ songId: song.id, userId: vocalist.id })}
+                            onClick={() => removeLeadVocal.mutate({ songId: displaySong.id, userId: vocalist.id })}
                             disabled={removeLeadVocal.isPending}
                             className="p-0.5 rounded-full text-brand-yellow/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
                           >
@@ -681,45 +825,83 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : !showLeadVocalSelector ? (
                   <p className="text-sm text-gray-500 italic">No asignado</p>
-                )}
+                ) : null}
 
-                {/* Lead vocal selector dropdown */}
+                {/* Lead vocal multi-select with search */}
                 {showLeadVocalSelector && canManageSongs && (
-                  <div className="mt-3 p-2 rounded-xl bg-surface-200/50 border border-surface-200 max-h-48 overflow-y-auto">
-                    {allUsers
-                      .filter((u: DbUser) => !song.leadVocals?.some((lv) => lv.id === u.id))
-                      .map((user: DbUser) => (
-                        <button
-                          key={user.id}
-                          onClick={() => {
-                            addLeadVocal.mutate({ songId: song.id, userId: user.id });
-                            setShowLeadVocalSelector(false);
-                          }}
-                          disabled={addLeadVocal.isPending}
-                          className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all text-left"
-                        >
-                          <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-100 shrink-0">
-                            {user.avatarUrl ? (
-                              <img src={user.avatarUrl} alt={user.name || ""} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <User size={14} className="text-gray-500" />
+                  <div className="space-y-2">
+                    {/* Search input */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input
+                        value={vocalSearchQuery}
+                        onChange={(e) => setVocalSearchQuery(e.target.value)}
+                        placeholder="Buscar por nombre..."
+                        autoFocus
+                        className="w-full bg-surface-200/50 border border-surface-200 rounded-lg pl-9 pr-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-brand-yellow outline-none"
+                      />
+                    </div>
+
+                    {/* User list with checkboxes */}
+                    <div className="max-h-48 overflow-y-auto rounded-lg bg-surface-200/30 border border-surface-200/50">
+                      {filteredVocalUsers.length > 0 ? (
+                        filteredVocalUsers.map((user: DbUser) => {
+                          const isSelected = pendingVocalIds.has(user.id);
+                          return (
+                            <button
+                              key={user.id}
+                              onClick={() => handleToggleVocal(user.id)}
+                              className={`w-full flex items-center gap-3 p-2.5 transition-all text-left ${
+                                isSelected ? "bg-brand-yellow/10" : "hover:bg-white/5"
+                              }`}
+                            >
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isSelected
+                                  ? "bg-brand-yellow border-brand-yellow"
+                                  : "border-gray-500"
+                              }`}>
+                                {isSelected && <Check size={12} className="text-brand-blue-primary" strokeWidth={3} />}
                               </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm text-white truncate">{user.name || user.email}</p>
-                            {user.instruments && user.instruments.length > 0 && (
-                              <p className="text-xs text-gray-500 truncate">{user.instruments.join(", ")}</p>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    {allUsers.filter((u: DbUser) => !song.leadVocals?.some((lv) => lv.id === u.id)).length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-2">No hay usuarios disponibles</p>
-                    )}
+                              <div className="w-7 h-7 rounded-full overflow-hidden bg-surface-100 shrink-0">
+                                {user.avatarUrl ? (
+                                  <img src={user.avatarUrl} alt={user.name || ""} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <User size={12} className="text-gray-500" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm text-white truncate">{user.name || user.email}</p>
+                                {user.instruments && user.instruments.length > 0 && (
+                                  <p className="text-xs text-gray-500 truncate">{user.instruments.join(", ")}</p>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-3">No se encontraron usuarios</p>
+                      )}
+                    </div>
+
+                    {/* Save button */}
+                    <button
+                      onClick={handleSaveVocals}
+                      disabled={setLeadVocals.isPending}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-brand-yellow text-brand-blue-primary font-medium text-sm hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
+                    >
+                      {setLeadVocals.isPending ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <>
+                          <Check size={16} />
+                          Guardar ({pendingVocalIds.size} seleccionados)
+                        </>
+                      )}
+                    </button>
                   </div>
                 )}
               </div>
@@ -732,9 +914,9 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                   </div>
                   Eventos
                 </h3>
-                {song.eventSongs && song.eventSongs.length > 0 ? (
+                {displaySong.eventSongs && displaySong.eventSongs.length > 0 ? (
                   <div className="flex flex-wrap gap-2">
-                    {song.eventSongs.map((es) => (
+                    {displaySong.eventSongs.map((es) => (
                       <button
                         key={es.event.id}
                         onClick={() => {
@@ -952,13 +1134,13 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
         {!isEditing && (
           <div className="shrink-0 px-6 py-4 border-t border-white/5">
             <div className="flex items-center justify-center gap-3">
-              {song.suggestedBy ? (
+              {displaySong.suggestedBy ? (
                 <>
                   <div className="w-6 h-6 rounded-full overflow-hidden bg-surface-200 shrink-0">
-                    {song.suggestedBy.avatarUrl ? (
+                    {displaySong.suggestedBy.avatarUrl ? (
                       <img
-                        src={song.suggestedBy.avatarUrl}
-                        alt={song.suggestedBy.name || ""}
+                        src={displaySong.suggestedBy.avatarUrl}
+                        alt={displaySong.suggestedBy.name || ""}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -970,10 +1152,10 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                   <p className="text-xs text-gray-500">
                     Sugerida por{" "}
                     <span className="text-gray-400 font-medium">
-                      {song.suggestedBy.name || "Usuario"}
+                      {displaySong.suggestedBy.name || "Usuario"}
                     </span>{" "}
                     el{" "}
-                    {new Date(song.createdAt).toLocaleDateString("es-DO", {
+                    {new Date(displaySong.createdAt).toLocaleDateString("es-DO", {
                       year: "numeric",
                       month: "long",
                       day: "numeric",
@@ -983,7 +1165,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
               ) : (
                 <p className="text-xs text-gray-500">
                   Agregada el{" "}
-                  {new Date(song.createdAt).toLocaleDateString("es-DO", {
+                  {new Date(displaySong.createdAt).toLocaleDateString("es-DO", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",

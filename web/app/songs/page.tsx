@@ -21,6 +21,7 @@ import {
   Clock,
   Settings,
   Filter,
+  ArrowUpDown,
   type LucideIcon,
 } from "lucide-react";
 import type { Song, RepertoireSection } from "@/lib/api";
@@ -127,6 +128,7 @@ export default function SongsPage() {
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showSectionSettings, setShowSectionSettings] = useState(false);
+  const [suggestionSort, setSuggestionSort] = useState<"recent" | "most-voted">("recent");
 
   const { data: songs, isLoading, error } = useSongs();
   const { data: sections } = useSections();
@@ -248,14 +250,24 @@ export default function SongsPage() {
       );
     }
 
+    // Sort suggestions by votes if requested
+    if (activeTab === "sugerencias" && suggestionSort === "most-voted") {
+      filtered = [...filtered].sort((a, b) => {
+        const scoreA = (a._count?.votes || 0) + (a._count?.goldenVotes || 0) * 3;
+        const scoreB = (b._count?.votes || 0) + (b._count?.goldenVotes || 0) * 3;
+        return scoreB - scoreA;
+      });
+    }
+
     return filtered;
-  }, [songs, activeTab, searchQuery, selectedGenre, selectedStatus]);
+  }, [songs, activeTab, searchQuery, selectedGenre, selectedStatus, suggestionSort]);
 
   // Reset status filter when changing tabs
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setSelectedStatus("all");
     setSelectedGenre(null);
+    setSuggestionSort("recent");
   };
 
   // Counts for tab badges
@@ -472,6 +484,36 @@ export default function SongsPage() {
         </div>
       )}
 
+      {/* Sort Filter - Only on sugerencias tab */}
+      {activeTab === "sugerencias" && (
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1">
+          <div className="flex items-center gap-1 text-gray-500 shrink-0">
+            <ArrowUpDown size={14} />
+            <span className="text-xs">Orden:</span>
+          </div>
+          <button
+            onClick={() => setSuggestionSort("recent")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+              suggestionSort === "recent"
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            Recientes
+          </button>
+          <button
+            onClick={() => setSuggestionSort("most-voted")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition-all ${
+              suggestionSort === "most-voted"
+                ? "bg-brand-yellow text-brand-blue-primary"
+                : "bg-surface-100/50 text-gray-400 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            Más votados
+          </button>
+        </div>
+      )}
+
       {/* Status Filter - Only on repertorio tab */}
       {activeTab === "repertorio" && (
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-2 px-1 -mx-1">
@@ -577,6 +619,7 @@ export default function SongsPage() {
                 song={song}
                 index={idx}
                 onClick={setSelectedSong}
+                showVoteCount={activeTab === "sugerencias"}
                 dataTour={idx === 0 ? "song-row" : undefined}
               />
             </div>

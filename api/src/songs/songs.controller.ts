@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, 
 import { SongsService } from './songs.service';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
+import { SetLeadVocalsDto } from './dto/set-lead-vocals.dto';
 import { AzureAdGuard } from '../auth/azure-ad.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -81,9 +82,32 @@ export class SongsController {
     return this.songsService.removeVote(id, userId);
   }
 
+  @Post(':id/golden-vote')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
+  addGoldenVote(@Param('id') id: string, @Request() req) {
+    const userId = req.user?.dbUser?.id;
+    return this.songsService.addGoldenVote(id, userId);
+  }
+
+  @Delete(':id/golden-vote')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
+  removeGoldenVote(@Param('id') id: string, @Request() req) {
+    const userId = req.user?.dbUser?.id;
+    return this.songsService.removeGoldenVote(id, userId);
+  }
+
   // ============================================================================
   // Lead Vocals Endpoints
   // ============================================================================
+
+  @Post(':id/lead-vocals')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPERADMIN)
+  setLeadVocals(@Param('id') id: string, @Body() dto: SetLeadVocalsDto) {
+    return this.songsService.setLeadVocals(id, dto.userIds);
+  }
 
   @Post(':id/lead-vocals/:userId')
   @UseGuards(RolesGuard)

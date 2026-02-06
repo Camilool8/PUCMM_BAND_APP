@@ -103,6 +103,7 @@ model SongVote {
   id        String   @id @default(uuid())
   userId    String
   songId    String
+  isGolden  Boolean  @default(false)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

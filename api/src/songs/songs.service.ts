@@ -36,8 +36,8 @@ export class SongsService {
     });
   }
 
-  findAll() {
-    return this.prisma.song.findMany({
+  async findAll() {
+    const songs = await this.prisma.song.findMany({
       orderBy: { updatedAt: 'desc' },
       include: {
         suggestedBy: {
@@ -58,10 +58,11 @@ export class SongsService {
         },
       },
     });
+    return this.enrichWithGoldenCounts(songs);
   }
 
-  findOne(id: string) {
-    return this.prisma.song.findUnique({
+  async findOne(id: string) {
+    const song = await this.prisma.song.findUnique({
       where: { id },
       include: {
         versions: true,
@@ -82,6 +83,7 @@ export class SongsService {
         votes: {
           select: {
             userId: true,
+            isGolden: true,
             user: {
               select: { id: true, name: true, avatarUrl: true },
             },
@@ -92,6 +94,9 @@ export class SongsService {
         },
       },
     });
+    if (!song) return null;
+    const [enriched] = await this.enrichWithGoldenCounts([song]);
+    return enriched;
   }
 
   update(id: string, updateSongDto: UpdateSongDto) {
@@ -177,14 +182,113 @@ export class SongsService {
   async getUserVotes(userId: string) {
     const votes = await this.prisma.songVote.findMany({
       where: { userId },
-      select: { songId: true },
+      select: { songId: true, isGolden: true },
     });
-    return votes.map(v => v.songId);
+    return votes;
+  }
+
+  // ============================================================================
+  // Golden Vote
+  // ============================================================================
+
+  async addGoldenVote(songId: string, userId: string) {
+    // Remove any existing golden vote by this user (only one allowed)
+    await this.prisma.songVote.updateMany({
+      where: { userId, isGolden: true },
+      data: { isGolden: false },
+    });
+
+    // Check if user already has a normal vote on this song
+    const existingVote = await this.prisma.songVote.findUnique({
+      where: { userId_songId: { userId, songId } },
+    });
+
+    if (existingVote) {
+      // Upgrade existing vote to golden
+      await this.prisma.songVote.update({
+        where: { id: existingVote.id },
+        data: { isGolden: true },
+      });
+    } else {
+      // Create new golden vote
+      await this.prisma.songVote.create({
+        data: { userId, songId, isGolden: true },
+      });
+    }
+
+    return this.getVoteCounts(songId);
+  }
+
+  async removeGoldenVote(songId: string, userId: string) {
+    const vote = await this.prisma.songVote.findUnique({
+      where: { userId_songId: { userId, songId } },
+    });
+
+    if (!vote || !vote.isGolden) {
+      throw new NotFoundException('No tienes un voto dorado en esta cancion');
+    }
+
+    // Downgrade to normal vote instead of removing entirely
+    await this.prisma.songVote.update({
+      where: { id: vote.id },
+      data: { isGolden: false },
+    });
+
+    return this.getVoteCounts(songId);
+  }
+
+  private async getVoteCounts(songId: string) {
+    const [totalVotes, goldenVotes] = await Promise.all([
+      this.prisma.songVote.count({ where: { songId } }),
+      this.prisma.songVote.count({ where: { songId, isGolden: true } }),
+    ]);
+    return { voteCount: totalVotes, goldenVoteCount: goldenVotes };
+  }
+
+  private async enrichWithGoldenCounts(songs: any[]) {
+    const songIds = songs.map(s => s.id);
+    if (songIds.length === 0) return songs;
+
+    const goldenCounts = await this.prisma.songVote.groupBy({
+      by: ['songId'],
+      where: { songId: { in: songIds }, isGolden: true },
+      _count: true,
+    });
+    const goldenMap = new Map(goldenCounts.map(g => [g.songId, g._count]));
+    return songs.map(s => ({
+      ...s,
+      _count: {
+        ...s._count,
+        goldenVotes: goldenMap.get(s.id) || 0,
+      },
+    }));
   }
 
   // ============================================================================
   // Lead Vocals
   // ============================================================================
+
+  async setLeadVocals(songId: string, userIds: string[]) {
+    return this.prisma.song.update({
+      where: { id: songId },
+      data: {
+        leadVocals: {
+          set: userIds.map(id => ({ id })),
+        },
+      },
+      include: {
+        leadVocals: {
+          select: { id: true, name: true, avatarUrl: true, instruments: true },
+        },
+        suggestedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+        _count: {
+          select: { votes: true },
+        },
+      },
+    });
+  }
 
   async addLeadVocal(songId: string, userId: string) {
     return this.prisma.song.update({

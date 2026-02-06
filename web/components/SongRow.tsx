@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Music, Clock } from "lucide-react";
+import { ChevronRight, Music, Clock, ThumbsUp, Star } from "lucide-react";
 import StatusBadge from "./StatusBadge";
 import { CachedImage } from "@/components/ui/CachedImage";
 import type { Song } from "@/lib/api";
@@ -10,6 +10,7 @@ interface SongRowProps {
   index: number;
   onClick: (song: Song) => void;
   dataTour?: string;
+  showVoteCount?: boolean;
 }
 
 // Platform icons as SVG components
@@ -39,7 +40,7 @@ function formatDuration(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-export default function SongRow({ song, index, onClick, dataTour }: SongRowProps) {
+export default function SongRow({ song, index, onClick, dataTour, showVoteCount }: SongRowProps) {
   const hasMusicLinks = song.spotifyUrl || song.youtubeUrl || song.appleMusicUrl;
 
   const handlePlatformClick = (e: React.MouseEvent, url: string) => {
@@ -142,6 +143,22 @@ export default function SongRow({ song, index, onClick, dataTour }: SongRowProps
               <AppleMusicIcon className="w-4 h-4" />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Vote counts for PENDING songs */}
+      {showVoteCount && song.status === "PENDING" && (song._count?.votes || 0) > 0 && (
+        <div className="flex items-center gap-1 shrink-0">
+          {(song._count?.goldenVotes || 0) > 0 && (
+            <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-brand-yellow/10 text-brand-yellow">
+              <Star size={10} className="fill-brand-yellow" />
+              <span className="text-xs font-medium">{song._count!.goldenVotes}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400">
+            <ThumbsUp size={10} />
+            <span className="text-xs font-medium">{song._count!.votes}</span>
+          </div>
         </div>
       )}
 

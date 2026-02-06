@@ -119,6 +119,38 @@ export function useUnvoteSong() {
   });
 }
 
+export function useAddGoldenVote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (songId: string) => api.addGoldenVote(songId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-votes"] });
+      toast.success("Voto dorado asignado");
+    },
+    onError: () => {
+      toast.error("No se pudo asignar el voto dorado");
+    },
+  });
+}
+
+export function useRemoveGoldenVote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (songId: string) => api.removeGoldenVote(songId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["my-votes"] });
+      toast.success("Voto dorado removido");
+    },
+    onError: () => {
+      toast.error("No se pudo remover el voto dorado");
+    },
+  });
+}
+
 // ============================================================================
 // Lead Vocals
 // ============================================================================
@@ -153,6 +185,23 @@ export function useRemoveLeadVocal() {
     },
     onError: () => {
       toast.error("No se pudo remover la voz");
+    },
+  });
+}
+
+export function useSetLeadVocals() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ songId, userIds }: { songId: string; userIds: string[] }) =>
+      api.setLeadVocals(songId, userIds),
+    onSuccess: (_, { songId }) => {
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
+      queryClient.invalidateQueries({ queryKey: ["songs", songId] });
+      toast.success("Voces principales actualizadas");
+    },
+    onError: () => {
+      toast.error("No se pudieron actualizar las voces");
     },
   });
 }
