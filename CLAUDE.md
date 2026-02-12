@@ -348,22 +348,37 @@ const response = await api.uploadImage(file, (progress) => {
 
 ## Environment Variables
 
+See [docs/deployment-guide.md](docs/deployment-guide.md) for the full deployment guide including all variables, seed data configuration, and step-by-step instructions for deploying a new organization.
+
 ### API (`api/.env`)
 ```
 DATABASE_URL=postgresql://...
 AZURE_AD_TENANT_ID=
+AZURE_AD_TENANT_NAME=            # e.g., "ce.pucmm.edu.do"
 AZURE_AD_CLIENT_ID=
 AZURE_AD_CLIENT_SECRET=
-SPOTIFY_CLIENT_ID=
+GOOGLE_CLIENT_ID=                # Optional: enables Google OAuth
+GOOGLE_CLIENT_SECRET=            # Optional
+ENABLE_EMAIL_PASSWORD_AUTH=      # Optional: "true" to enable
+SPOTIFY_CLIENT_ID=               # Optional: music metadata
 SPOTIFY_CLIENT_SECRET=
+GETSONGBPM_API_KEY=              # Optional: BPM/key metadata
+JWT_SECRET=                      # App-issued JWT tokens
+FRONTEND_URL=                    # OAuth callbacks
+CORS_ORIGINS=                    # Comma-separated frontend origins
 PORT=3001
+NODE_ENV=                        # development | production
 ```
 
 ### Web (`web/.env.local`)
 ```
 NEXT_PUBLIC_API_URL=http://localhost:3001
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_AZURE_AD_TENANT_ID=
 NEXT_PUBLIC_AZURE_AD_CLIENT_ID=
+NEXT_PUBLIC_ORG_NAME=            # Display name (fallback: "Band App")
+NEXT_PUBLIC_ORG_DESCRIPTION=     # Meta description (fallback: "Band Management System")
+API_INTERNAL_URL=                # Server-only: internal URL for SSR
 ```
 
 ### Production
