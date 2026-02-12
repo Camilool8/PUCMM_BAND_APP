@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
@@ -32,7 +32,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
       }),
     }),
     PrismaModule,
-    OrganizationsModule,
+    forwardRef(() => OrganizationsModule),
   ],
   controllers: [AuthController],
   providers: [
