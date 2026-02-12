@@ -114,6 +114,8 @@ export function useAuth() {
   const isAdmin = effectiveRole === "SUPERADMIN";
   const canManageUsers = effectiveRole === "SUPERADMIN";
   const canManageSongs = effectiveRole === "SUPERADMIN";
+  // Members can edit songs (BPM, key, links, name, status) but not delete them
+  const canEditSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
   const canManageEvents = effectiveRole === "SUPERADMIN";
   // Members can suggest, students (STUDENT_GUEST) can only view
   const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
@@ -169,6 +171,7 @@ export function useAuth() {
     isAdmin,
     canManageUsers,
     canManageSongs,
+    canEditSongs,
     canManageEvents,
     canSuggestSongs,
     canVote,

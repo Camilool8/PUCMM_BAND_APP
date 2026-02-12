@@ -120,7 +120,7 @@ const STATUS_OPTIONS: {
 
 export default function SongDetailModal({ song, onClose }: SongDetailModalProps) {
   const router = useRouter();
-  const { canManageSongs, canUploadMedia, canDeleteAssets, canVote } = useAuth();
+  const { canManageSongs, canEditSongs, canUploadMedia, canDeleteAssets, canVote } = useAuth();
 
   // Fetch fresh song data to stay in sync after mutations (lead vocals, votes, etc.)
   const { data: freshSong } = useSong(song?.id || "");
@@ -384,8 +384,8 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
             <X size={18} />
           </button>
 
-          {/* Edit button for admins */}
-          {canManageSongs && !isEditing && (
+          {/* Edit button for admins and members */}
+          {canEditSongs && !isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="absolute top-4 right-16 z-10 w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white/80 hover:text-white transition-all duration-200"
@@ -649,15 +649,15 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
               <div className="p-4 bg-surface-100/50 rounded-2xl border border-surface-200/50">
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-sm text-gray-400 font-medium">Estado actual</p>
-                  {canManageSongs && (
+                  {canEditSongs && (
                     <span className="flex items-center gap-1.5 text-xs text-purple-400 bg-purple-500/10 px-2 py-1 rounded-full">
                       <Shield size={12} />
-                      Admin
+                      Editar
                     </span>
                   )}
                 </div>
 
-                {canManageSongs ? (
+                {canEditSongs ? (
                   <div className="grid grid-cols-2 gap-2">
                     {STATUS_OPTIONS.map((option) => {
                       const isSelected = currentStatus === option.value;

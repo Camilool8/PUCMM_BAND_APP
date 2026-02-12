@@ -50,7 +50,7 @@ export class SongsController {
 
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(Role.SUPERADMIN)
+  @Roles(Role.SUPERADMIN, Role.MEMBER)
   update(@Param('id') id: string, @Body() updateSongDto: UpdateSongDto) {
     return this.songsService.update(id, updateSongDto);
   }

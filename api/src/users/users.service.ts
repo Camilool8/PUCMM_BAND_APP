@@ -18,9 +18,13 @@ export class UsersService {
         email: true,
         name: true,
         avatarUrl: true,
+        homeBackground: true,
         role: true,
         instruments: true,
+        phone: true,
+        bio: true,
         createdAt: true,
+        updatedAt: true,
       },
     });
   }

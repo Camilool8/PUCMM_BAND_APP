@@ -16,7 +16,7 @@ import {
 import { Modal } from "@/components/ui/Modal";
 import { FileDropzone } from "@/components/ui/FileDropzone";
 import { useAuth } from "@/hooks/use-auth";
-import { useUpdateProfile } from "@/hooks/use-users";
+import { useUpdateProfile, useUpdateUserProfile } from "@/hooks/use-users";
 import { useUpload } from "@/hooks/use-upload";
 import {
   BACKGROUND_PRESETS,
@@ -24,12 +24,14 @@ import {
   isCustomImageBackground,
   isPresetBackground,
 } from "@/lib/background-presets";
-import type { UploadResponse } from "@/lib/api";
+import type { DbUser, UploadResponse } from "@/lib/api";
 import { env } from "@/lib/env";
 
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** When set, admin is editing this user's profile instead of their own */
+  targetUser?: DbUser | null;
 }
 
 // Common band instruments
@@ -51,10 +53,15 @@ const INSTRUMENT_OPTIONS = [
   "Voz",
 ];
 
-export default function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-  const { dbUser, canEditProfile } = useAuth();
-  const updateProfile = useUpdateProfile();
+export default function UserProfileModal({ isOpen, onClose, targetUser }: UserProfileModalProps) {
+  const { dbUser, canEditProfile: selfCanEditProfile } = useAuth();
+  const updateSelfProfile = useUpdateProfile();
+  const updateOtherProfile = useUpdateUserProfile();
   const avatarUpload = useUpload("image");
+
+  const isAdminEditing = !!targetUser;
+  const displayUser = isAdminEditing ? targetUser : dbUser;
+  const canEditProfile = isAdminEditing || selfCanEditProfile;
 
   // Form state
   const [name, setName] = useState("");
@@ -67,17 +74,19 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   const [showUploader, setShowUploader] = useState(false);
   const [showBackgroundUploader, setShowBackgroundUploader] = useState(false);
 
-  // Initialize form with current user data
+  // Initialize form with user data
   useEffect(() => {
-    if (dbUser) {
-      setName(dbUser.name || "");
-      setAvatarUrl(dbUser.avatarUrl || null);
-      setHomeBackground(dbUser.homeBackground || null);
-      setInstruments(dbUser.instruments || []);
-      setPhone(dbUser.phone || "");
-      setBio(dbUser.bio || "");
+    if (displayUser) {
+      setName(displayUser.name || "");
+      setAvatarUrl(displayUser.avatarUrl || null);
+      setHomeBackground(displayUser.homeBackground || null);
+      setInstruments(displayUser.instruments || []);
+      setPhone(displayUser.phone || "");
+      setBio(displayUser.bio || "");
+      setShowUploader(false);
+      setShowBackgroundUploader(false);
     }
-  }, [dbUser]);
+  }, [displayUser?.id, isOpen]);
 
   const handleAvatarUpload = (response: UploadResponse) => {
     const fullUrl = `${env.apiUrl}${response.file.url}`;
@@ -112,31 +121,39 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
   };
 
   const handleSave = async () => {
-    await updateProfile.mutateAsync({
+    const profileData = {
       name: name || undefined,
       avatarUrl: avatarUrl || undefined,
       homeBackground: homeBackground || undefined,
       instruments,
       phone: phone || undefined,
       bio: bio || undefined,
-    });
+    };
+
+    if (isAdminEditing && targetUser) {
+      await updateOtherProfile.mutateAsync({ userId: targetUser.id, data: profileData });
+    } else {
+      await updateSelfProfile.mutateAsync(profileData);
+    }
     onClose();
   };
 
-  const hasChanges =
-    name !== (dbUser?.name || "") ||
-    avatarUrl !== (dbUser?.avatarUrl || null) ||
-    homeBackground !== (dbUser?.homeBackground || null) ||
-    JSON.stringify(instruments) !== JSON.stringify(dbUser?.instruments || []) ||
-    phone !== (dbUser?.phone || "") ||
-    bio !== (dbUser?.bio || "");
+  const isPending = isAdminEditing ? updateOtherProfile.isPending : updateSelfProfile.isPending;
 
-  if (!dbUser) return null;
+  const hasChanges =
+    name !== (displayUser?.name || "") ||
+    avatarUrl !== (displayUser?.avatarUrl || null) ||
+    homeBackground !== (displayUser?.homeBackground || null) ||
+    JSON.stringify(instruments) !== JSON.stringify(displayUser?.instruments || []) ||
+    phone !== (displayUser?.phone || "") ||
+    bio !== (displayUser?.bio || "");
+
+  if (!displayUser) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <Modal.Header icon={<User size={24} />} subtitle={dbUser.email}>
-        Mi Perfil
+      <Modal.Header icon={<User size={24} />} subtitle={displayUser.email}>
+        {isAdminEditing ? `Editar Perfil: ${displayUser.name || displayUser.email}` : "Mi Perfil"}
       </Modal.Header>
 
       <Modal.Body className="space-y-6">
@@ -154,7 +171,7 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-brand-blue-primary to-indigo-600">
                   <span className="text-4xl font-bold text-white">
-                    {(name || dbUser.email)[0].toUpperCase()}
+                    {(name || displayUser.email)[0].toUpperCase()}
                   </span>
                 </div>
               )}
@@ -199,125 +216,127 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           />
         </div>
 
-        {/* Home Background */}
-        <div data-tour="profile-background">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
-            <Palette size={16} />
-            Fondo de Inicio
-          </label>
-          <p className="text-xs text-gray-500 mb-3">
-            Personaliza el fondo de tu página de inicio
-          </p>
+        {/* Home Background - only show for self-editing */}
+        {!isAdminEditing && (
+          <div data-tour="profile-background">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
+              <Palette size={16} />
+              Fondo de Inicio
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Personaliza el fondo de tu página de inicio
+            </p>
 
-          {/* Current Selection Preview */}
-          <div className="mb-4">
-            <div
-              className="w-full h-20 rounded-xl overflow-hidden relative border border-surface-200"
-              style={
-                isCustomImageBackground(homeBackground)
-                  ? {
-                      backgroundImage: `url(${homeBackground})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }
-                  : {
-                      backgroundImage:
-                        BACKGROUND_PRESETS.find(
+            {/* Current Selection Preview */}
+            <div className="mb-4">
+              <div
+                className="w-full h-20 rounded-xl overflow-hidden relative border border-surface-200"
+                style={
+                  isCustomImageBackground(homeBackground)
+                    ? {
+                        backgroundImage: `url(${homeBackground})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : {
+                        backgroundImage:
+                          BACKGROUND_PRESETS.find(
+                            (p) => p.id === (homeBackground || DEFAULT_BACKGROUND_ID)
+                          )?.preview || BACKGROUND_PRESETS[0].preview,
+                      }
+                }
+              >
+                {isCustomImageBackground(homeBackground) && (
+                  <div className="absolute inset-0 backdrop-blur-sm" />
+                )}
+                <div className="absolute inset-0 bg-surface-0/60 flex items-center justify-center">
+                  <span className="text-xs text-gray-300">
+                    {isCustomImageBackground(homeBackground)
+                      ? "Imagen personalizada"
+                      : BACKGROUND_PRESETS.find(
                           (p) => p.id === (homeBackground || DEFAULT_BACKGROUND_ID)
-                        )?.preview || BACKGROUND_PRESETS[0].preview,
-                    }
-              }
-            >
-              {isCustomImageBackground(homeBackground) && (
-                <div className="absolute inset-0 backdrop-blur-sm" />
-              )}
-              <div className="absolute inset-0 bg-surface-0/60 flex items-center justify-center">
-                <span className="text-xs text-gray-300">
-                  {isCustomImageBackground(homeBackground)
-                    ? "Imagen personalizada"
-                    : BACKGROUND_PRESETS.find(
-                        (p) => p.id === (homeBackground || DEFAULT_BACKGROUND_ID)
-                      )?.name || "Predeterminado"}
-                </span>
+                        )?.name || "Predeterminado"}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Preset Options */}
-          {canEditProfile && (
-            <>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {BACKGROUND_PRESETS.map((preset) => {
-                  const isSelected =
-                    homeBackground === preset.id ||
-                    (!homeBackground && preset.id === DEFAULT_BACKGROUND_ID);
-                  return (
-                    <button
-                      key={preset.id}
-                      onClick={() => handleSelectPreset(preset.id)}
-                      className={`relative h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? "border-brand-yellow ring-2 ring-brand-yellow/30"
-                          : "border-surface-200 hover:border-white/30"
-                      }`}
-                      title={preset.description}
-                    >
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: preset.preview }}
-                      />
-                      <div className="absolute inset-0 bg-black/40 flex items-end justify-center pb-1">
-                        <span className="text-[10px] text-white font-medium truncate px-1">
-                          {preset.name}
-                        </span>
-                      </div>
-                      {isSelected && (
-                        <div className="absolute top-1 right-1 w-4 h-4 bg-brand-yellow rounded-full flex items-center justify-center">
-                          <Check size={10} className="text-brand-blue-primary" />
+            {/* Preset Options */}
+            {canEditProfile && (
+              <>
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {BACKGROUND_PRESETS.map((preset) => {
+                    const isSelected =
+                      homeBackground === preset.id ||
+                      (!homeBackground && preset.id === DEFAULT_BACKGROUND_ID);
+                    return (
+                      <button
+                        key={preset.id}
+                        onClick={() => handleSelectPreset(preset.id)}
+                        className={`relative h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                          isSelected
+                            ? "border-brand-yellow ring-2 ring-brand-yellow/30"
+                            : "border-surface-200 hover:border-white/30"
+                        }`}
+                        title={preset.description}
+                      >
+                        <div
+                          className="absolute inset-0"
+                          style={{ background: preset.preview }}
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-end justify-center pb-1">
+                          <span className="text-[10px] text-white font-medium truncate px-1">
+                            {preset.name}
+                          </span>
                         </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Custom Image Upload Toggle */}
-              <button
-                onClick={() => setShowBackgroundUploader(!showBackgroundUploader)}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
-                  isCustomImageBackground(homeBackground)
-                    ? "bg-brand-yellow/10 border-brand-yellow/50 text-brand-yellow"
-                    : "bg-surface-100/50 border-surface-200 text-gray-400 hover:border-white/30 hover:text-white"
-                }`}
-              >
-                <ImagePlus size={18} />
-                <span className="text-sm">
-                  {isCustomImageBackground(homeBackground)
-                    ? "Cambiar imagen personalizada"
-                    : "Subir imagen personalizada"}
-                </span>
-              </button>
-
-              {/* Background Image Uploader */}
-              {showBackgroundUploader && (
-                <div className="mt-3 animate-fade-in">
-                  <FileDropzone
-                    type="image"
-                    label="Subir imagen de fondo"
-                    description="Se aplicará desenfoque para mantener la legibilidad"
-                    onUploadComplete={handleBackgroundUpload}
-                  />
+                        {isSelected && (
+                          <div className="absolute top-1 right-1 w-4 h-4 bg-brand-yellow rounded-full flex items-center justify-center">
+                            <Check size={10} className="text-brand-blue-primary" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-            </>
-          )}
-        </div>
+
+                {/* Custom Image Upload Toggle */}
+                <button
+                  onClick={() => setShowBackgroundUploader(!showBackgroundUploader)}
+                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${
+                    isCustomImageBackground(homeBackground)
+                      ? "bg-brand-yellow/10 border-brand-yellow/50 text-brand-yellow"
+                      : "bg-surface-100/50 border-surface-200 text-gray-400 hover:border-white/30 hover:text-white"
+                  }`}
+                >
+                  <ImagePlus size={18} />
+                  <span className="text-sm">
+                    {isCustomImageBackground(homeBackground)
+                      ? "Cambiar imagen personalizada"
+                      : "Subir imagen personalizada"}
+                  </span>
+                </button>
+
+                {/* Background Image Uploader */}
+                {showBackgroundUploader && (
+                  <div className="mt-3 animate-fade-in">
+                    <FileDropzone
+                      type="image"
+                      label="Subir imagen de fondo"
+                      description="Se aplicará desenfoque para mantener la legibilidad"
+                      onUploadComplete={handleBackgroundUpload}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {/* Instruments */}
         <div>
           <label className="flex items-center gap-2 text-sm font-medium text-gray-400 mb-3">
             <Music2 size={16} />
-            Instrumentos que tocas
+            {isAdminEditing ? "Instrumentos" : "Instrumentos que tocas"}
           </label>
 
           {/* Selected Instruments */}
@@ -432,10 +451,10 @@ export default function UserProfileModal({ isOpen, onClose }: UserProfileModalPr
           </button>
           <button
             onClick={handleSave}
-            disabled={updateProfile.isPending || !hasChanges}
+            disabled={isPending || !hasChanges}
             className="flex items-center gap-2 px-5 py-2 bg-brand-yellow text-brand-blue-primary font-medium rounded-lg hover:bg-brand-yellow/90 transition-all disabled:opacity-50"
           >
-            {updateProfile.isPending ? (
+            {isPending ? (
               <>
                 <span className="w-4 h-4 border-2 border-brand-blue-primary/30 border-t-brand-blue-primary rounded-full animate-spin" />
                 Guardando...

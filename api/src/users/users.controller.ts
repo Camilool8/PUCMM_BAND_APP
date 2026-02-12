@@ -64,23 +64,38 @@ export class UsersController {
   async updateRole(
     @Param('id') id: string,
     @Body() updateUserRoleDto: UpdateUserRoleDto,
+    @Request() req,
   ) {
     // Validate role
     if (!updateUserRoleDto.role || !VALID_ROLES.includes(updateUserRoleDto.role)) {
       throw new BadRequestException(`Invalid role. Valid roles: ${VALID_ROLES.join(', ')}`);
     }
 
-    // Prevent changing SUPERADMIN role or assigning SUPERADMIN to others
+    const currentUser = req.user.dbUser;
     const targetUser = await this.usersService.findOne(id);
 
-    if (targetUser.role === Role.SUPERADMIN) {
-      throw new ForbiddenException('Cannot modify SUPERADMIN role');
+    // Prevent demoting an existing SUPERADMIN
+    if (targetUser.role === Role.SUPERADMIN && updateUserRoleDto.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Cannot demote a SUPERADMIN user');
     }
 
-    if (updateUserRoleDto.role === Role.SUPERADMIN) {
-      throw new ForbiddenException('Cannot assign SUPERADMIN role');
+    // Prevent self-demotion
+    if (currentUser.id === id && updateUserRoleDto.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException('Cannot demote yourself');
     }
 
     return this.usersService.updateRole(id, updateUserRoleDto.role);
+  }
+
+  // Admin: Update any user's profile (SUPERADMIN only)
+  @Patch(':id/profile')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPERADMIN)
+  async updateUserProfile(
+    @Param('id') id: string,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
+    await this.usersService.findOne(id);
+    return this.usersService.updateProfile(id, updateProfileDto);
   }
 }

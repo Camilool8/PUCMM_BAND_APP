@@ -504,6 +504,13 @@ class ApiClient {
     });
   }
 
+  async updateUserProfile(id: string, data: UpdateProfileDto): Promise<DbUser> {
+    return this.request<DbUser>(`/users/${id}/profile`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   // ============================================================================
   // Uploads
   // ============================================================================
@@ -855,6 +862,7 @@ class ApiClientProxy {
   getUsers = () => this.client.getUsers();
   updateUserRole = (id: string, role: Role) => this.client.updateUserRole(id, role);
   updateProfile = (data: UpdateProfileDto) => this.client.updateProfile(data);
+  updateUserProfile = (id: string, data: UpdateProfileDto) => this.client.updateUserProfile(id, data);
   uploadFile = (endpoint: string, file: File, onProgress?: (progress: number) => void) => this.client.uploadFile(endpoint, file, onProgress);
   uploadImage = (file: File, onProgress?: (progress: number) => void) => this.client.uploadImage(file, onProgress);
   uploadPdf = (file: File, onProgress?: (progress: number) => void) => this.client.uploadPdf(file, onProgress);

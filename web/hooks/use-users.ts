@@ -44,3 +44,19 @@ export function useUpdateProfile() {
     },
   });
 }
+
+export function useUpdateUserProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: UpdateProfileDto }) =>
+      api.updateUserProfile(userId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("Perfil del usuario actualizado exitosamente");
+    },
+    onError: () => {
+      toast.error(TOAST_MESSAGES.ERROR_GENERIC);
+    },
+  });
+}
