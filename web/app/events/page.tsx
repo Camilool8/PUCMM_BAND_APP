@@ -206,7 +206,7 @@ export default function EventsPage() {
           {/* Info */}
           <div className="flex-1 min-w-0 pb-1">
             <p className="text-xs md:text-sm font-medium text-white/60 uppercase tracking-wider mb-1">
-              {isEventSelected ? "Evento" : "PUCMM Band"}
+              {isEventSelected ? "Evento" : "Eventos"}
             </p>
             <h1 className="text-xl md:text-4xl font-black text-white truncate">
               {headerTitle}

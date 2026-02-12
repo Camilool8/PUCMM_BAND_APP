@@ -1,0 +1,145 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateOrgDto } from './dto/create-org.dto';
+import { UpdateOrgDto, UpdateOrgStatusDto } from './dto/update-org.dto';
+export declare class OrganizationsService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    findAll(): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }[]>;
+    findOne(id: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }>;
+    create(dto: CreateOrgDto): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }>;
+    update(id: string, dto: UpdateOrgDto): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }>;
+    updateStatus(id: string, dto: UpdateOrgStatusDto): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }>;
+    remove(id: string): Promise<{
+        id: string;
+        name: string;
+        createdAt: Date;
+        updatedAt: Date;
+        slug: string;
+        apiUrl: string | null;
+        frontendUrl: string | null;
+        status: import(".prisma/client").$Enums.OrgStatus;
+        adminEmail: string;
+        adminName: string | null;
+        allowedEmailDomains: string[];
+        authProviders: string[];
+        colorPrimary: string;
+        logoUrl: string | null;
+        lastHealthCheck: Date | null;
+        isHealthy: boolean;
+        notes: string | null;
+    }>;
+    healthCheck(id: string): Promise<{
+        healthy: boolean;
+        error: string;
+        statusCode?: undefined;
+    } | {
+        healthy: boolean;
+        statusCode: number;
+        error?: undefined;
+    }>;
+    healthCheckAll(): Promise<({
+        healthy: boolean;
+        error: string;
+        statusCode?: undefined;
+        id: string;
+        slug: string;
+    } | {
+        healthy: boolean;
+        statusCode: number;
+        error?: undefined;
+        id: string;
+        slug: string;
+    } | {
+        error: string;
+    })[]>;
+}

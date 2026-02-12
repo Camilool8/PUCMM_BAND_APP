@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useMsal, useIsAuthenticated, useAccount } from "@azure/msal-react";
-import { InteractionStatus } from "@azure/msal-browser";
+import { useCallback, useEffect, useState, useContext } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { loginRequest } from "@/lib/msal-config";
 import { api, DbUser, Role } from "@/lib/api";
+import { env } from "@/lib/env";
+import { authToken } from "@/lib/auth-token";
+import { MsalContext } from "@/hooks/use-msal-context";
 
-// Hardcoded SUPERADMIN email (same as backend)
-const SUPERADMIN_EMAIL = "jcjg0001@ce.pucmm.edu.do";
+// SUPERADMIN is determined by the backend (from Organization config)
+// The frontend checks role === "SUPERADMIN" instead of matching email
 
 export interface User {
   id: string;
@@ -29,13 +30,13 @@ const ROLE_DISPLAY_NAMES: Record<Role, string> = {
 };
 
 export function useAuth() {
-  const { instance, accounts, inProgress } = useMsal();
-  const isAuthenticated = useIsAuthenticated();
-  const account = useAccount(accounts[0] || null);
   const queryClient = useQueryClient();
+  const msalContext = useContext(MsalContext);
+
+  // App token state (for Google/email-password auth)
+  const [appToken, setAppToken] = useState<string | null>(() => authToken.get());
 
   // Dev mode view role (stored in localStorage)
-  // null means use real role, otherwise simulates that role
   const [devViewRole, setDevViewRole] = useState<Role | null>(null);
 
   // Initialize dev mode state from localStorage
@@ -58,35 +59,51 @@ export function useAuth() {
     }
   }, []);
 
-  // Acquire token silently and set it on the API client
+  // MSAL state (may not be available if Azure AD is not configured)
+  const msalInstance = msalContext?.instance ?? null;
+  const msalAccounts = msalContext?.accounts ?? [];
+  const msalInProgress = msalContext?.inProgress ?? "none";
+  const msalAccount = msalAccounts[0] ?? null;
+  const isAzureAuthenticated = msalContext?.isAuthenticated ?? false;
+
+  // Combined authentication state
+  const isAuthenticated = isAzureAuthenticated || !!appToken;
+
+  // Acquire token — works for both Azure AD and app JWT
   const acquireToken = useCallback(async () => {
-    if (!account) return null;
+    // If we have an app token (Google/email-password), use it directly
+    if (appToken) {
+      api.setAccessToken(appToken);
+      return appToken;
+    }
+
+    // Otherwise, try Azure AD
+    if (!msalInstance || !msalAccount) return null;
 
     try {
-      const response = await instance.acquireTokenSilent({
+      const response = await msalInstance.acquireTokenSilent({
         ...loginRequest,
-        account,
+        account: msalAccount,
       });
       const token = response.idToken || response.accessToken;
       api.setAccessToken(token);
       return token;
     } catch (error) {
       console.error("Token acquisition failed:", error);
-      await instance.acquireTokenRedirect(loginRequest);
+      await msalInstance.acquireTokenRedirect(loginRequest);
       return null;
     }
-  }, [instance, account]);
+  }, [msalInstance, msalAccount, appToken]);
 
   // Fetch user data from backend
   const { data: dbUser, isLoading: isLoadingUser } = useQuery({
     queryKey: ["user", "me"],
     queryFn: async () => {
-      // Ensure we have a token before fetching
       await acquireToken();
       return api.getMe();
     },
-    enabled: isAuthenticated && !!account,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
@@ -94,9 +111,9 @@ export function useAuth() {
   const user: User | null = dbUser
     ? {
         id: dbUser.id,
-        name: dbUser.name || account?.name || account?.username?.split("@")[0] || "Usuario",
+        name: dbUser.name || msalAccount?.name || msalAccount?.username?.split("@")[0] || "Usuario",
         email: dbUser.email,
-        initials: getInitials(dbUser.name || account?.name || account?.username || "U"),
+        initials: getInitials(dbUser.name || msalAccount?.name || msalAccount?.username || "U"),
         avatarUrl: dbUser.avatarUrl || null,
         role: dbUser.role,
         displayRole: ROLE_DISPLAY_NAMES[dbUser.role],
@@ -114,60 +131,98 @@ export function useAuth() {
   const isAdmin = effectiveRole === "SUPERADMIN";
   const canManageUsers = effectiveRole === "SUPERADMIN";
   const canManageSongs = effectiveRole === "SUPERADMIN";
-  // Members can edit songs (BPM, key, links, name, status) but not delete them
   const canEditSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
   const canManageEvents = effectiveRole === "SUPERADMIN";
-  // Members can suggest, students (STUDENT_GUEST) can only view
   const canSuggestSongs = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
-  // Only members (not STUDENT_GUEST) can vote on suggestions
   const canVote = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
-  // Only members (not STUDENT_GUEST) can edit their profile
   const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
-  // Members can upload media (scores, videos) to songs and concerts
   const canUploadMedia = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
-  // Only admin can delete assets
   const canDeleteAssets = effectiveRole === "SUPERADMIN";
 
-  // Check if current user is the superadmin (for showing dev toggle)
   const showDevToggle =
     process.env.NODE_ENV === "development" &&
-    account?.username?.toLowerCase() === SUPERADMIN_EMAIL;
+    user?.role === "SUPERADMIN";
 
-  // Login with redirect
-  const login = useCallback(async () => {
-    try {
-      await instance.loginRedirect(loginRequest);
-    } catch (error) {
-      console.error("Login failed:", error);
+  // Login by provider type
+  const login = useCallback(async (provider?: string) => {
+    switch (provider) {
+      case "google": {
+        const apiUrl = env.apiUrl || "http://localhost:3001";
+        window.location.href = `${apiUrl}/auth/google`;
+        return;
+      }
+      case "email_password":
+        // Handled by the EmailPasswordForm component directly
+        return;
+      case "azure_ad":
+      default:
+        if (msalInstance) {
+          try {
+            await msalInstance.loginRedirect(loginRequest);
+          } catch (error) {
+            console.error("Login failed:", error);
+          }
+        }
+        return;
     }
-  }, [instance]);
+  }, [msalInstance]);
+
+  // Login with email/password
+  const loginWithPassword = useCallback(async (email: string, password: string) => {
+    const response = await api.login(email, password);
+    authToken.set(response.accessToken, "email_password");
+    setAppToken(response.accessToken);
+    api.setAccessToken(response.accessToken);
+    return response;
+  }, []);
+
+  // Register with email/password
+  const registerWithPassword = useCallback(async (email: string, password: string, name?: string) => {
+    const response = await api.register(email, password, name);
+    authToken.set(response.accessToken, "email_password");
+    setAppToken(response.accessToken);
+    api.setAccessToken(response.accessToken);
+    return response;
+  }, []);
 
   // Logout
   const logout = useCallback(async () => {
     try {
       api.setAccessToken(null);
+      authToken.clear();
+      setAppToken(null);
       queryClient.clear();
-      await instance.logoutRedirect({
-        postLogoutRedirectUri: window.location.origin,
-      });
+
+      if (isAzureAuthenticated && msalInstance) {
+        await msalInstance.logoutRedirect({
+          postLogoutRedirectUri: window.location.origin,
+        });
+      } else {
+        window.location.href = "/";
+      }
     } catch (error) {
       console.error("Logout failed:", error);
     }
-  }, [instance, queryClient]);
+  }, [msalInstance, queryClient, isAzureAuthenticated]);
 
   // Acquire token on mount when authenticated
   useEffect(() => {
-    if (isAuthenticated && account) {
+    if (isAuthenticated) {
       acquireToken();
     }
-  }, [isAuthenticated, account, acquireToken]);
+  }, [isAuthenticated, acquireToken]);
+
+  // Determine loading state
+  const isLoading = msalContext
+    ? msalInProgress !== "none" || isLoadingUser
+    : isLoadingUser;
 
   return {
     user,
     dbUser,
     effectiveRole,
     isAuthenticated,
-    isLoading: inProgress !== InteractionStatus.None || isLoadingUser,
+    isLoading,
     isAdmin,
     canManageUsers,
     canManageSongs,
@@ -184,6 +239,8 @@ export function useAuth() {
     setDevRole,
     // Actions
     login,
+    loginWithPassword,
+    registerWithPassword,
     logout,
     acquireToken,
   };

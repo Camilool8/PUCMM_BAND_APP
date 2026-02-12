@@ -1,27 +1,29 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
 
+const orgName = env.orgName;
+
 export const metadata: Metadata = {
   title: "Eventos",
-  description: "Eventos y presentaciones de la Banda Universitaria PUCMM - Navidad, Graduaciones, y mas",
+  description: `Eventos y presentaciones de ${orgName} - Navidad, Graduaciones, y mas`,
   openGraph: {
-    title: "Eventos | PUCMM Band",
-    description: "Eventos y presentaciones de la Banda Universitaria PUCMM - Navidad, Graduaciones, y mas",
+    title: `Eventos | ${orgName}`,
+    description: `Eventos y presentaciones de ${orgName} - Navidad, Graduaciones, y mas`,
     type: "website",
-    siteName: "PUCMM Band",
+    siteName: orgName,
     images: [
       {
         url: `${env.siteUrl}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "PUCMM Band - Eventos",
+        alt: `${orgName} - Eventos`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Eventos | PUCMM Band",
-    description: "Eventos y presentaciones de la Banda Universitaria PUCMM",
+    title: `Eventos | ${orgName}`,
+    description: `Eventos y presentaciones de ${orgName}`,
     images: [`${env.siteUrl}/opengraph-image`],
   },
 };

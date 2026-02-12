@@ -11,14 +11,14 @@ import {
 } from '@nestjs/common';
 import { RepertoireSectionsService } from './repertoire-sections.service';
 import { UpdateSectionDto } from './dto/update-section.dto';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 import { Role } from '@prisma/client';
 
 // Only SUPERADMIN can edit sections
 const SECTION_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('repertoire-sections')
-@UseGuards(AzureAdGuard)
+@UseGuards(UnifiedAuthGuard)
 export class RepertoireSectionsController {
   constructor(private readonly sectionsService: RepertoireSectionsService) {}
 

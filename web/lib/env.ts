@@ -10,6 +10,8 @@ type EnvConfig = {
   NEXT_PUBLIC_SITE_URL: string;
   NEXT_PUBLIC_AZURE_AD_CLIENT_ID: string;
   NEXT_PUBLIC_AZURE_AD_TENANT_ID: string;
+  NEXT_PUBLIC_ORG_NAME: string;
+  NEXT_PUBLIC_ORG_DESCRIPTION: string;
   // Server-only env vars (not prefixed with NEXT_PUBLIC_)
   API_INTERNAL_URL?: string;
 };
@@ -37,7 +39,7 @@ function getEnvValue(key: keyof EnvConfig): string {
 export const env = {
   /** Public API URL - use for client-side fetches and public URLs */
   get apiUrl(): string {
-    return getEnvValue("NEXT_PUBLIC_API_URL") || "https://pucmm-band-api.cjoga.cloud";
+    return getEnvValue("NEXT_PUBLIC_API_URL") || "http://localhost:3001";
   },
   /** Internal API URL - use for server-side fetches (SSR/generateMetadata) */
   get apiUrlInternal(): string {
@@ -49,12 +51,20 @@ export const env = {
     return this.apiUrl;
   },
   get siteUrl(): string {
-    return getEnvValue("NEXT_PUBLIC_SITE_URL") || "https://pucmm-band.cjoga.cloud";
+    return getEnvValue("NEXT_PUBLIC_SITE_URL") || "http://localhost:3000";
   },
   get azureAdClientId(): string {
     return getEnvValue("NEXT_PUBLIC_AZURE_AD_CLIENT_ID");
   },
   get azureAdTenantId(): string {
     return getEnvValue("NEXT_PUBLIC_AZURE_AD_TENANT_ID");
+  },
+  /** Organization name for SSR metadata (set via env or falls back to generic) */
+  get orgName(): string {
+    return getEnvValue("NEXT_PUBLIC_ORG_NAME") || "Band App";
+  },
+  /** Organization description for SSR metadata */
+  get orgDescription(): string {
+    return getEnvValue("NEXT_PUBLIC_ORG_DESCRIPTION") || "Band Management System";
   },
 };

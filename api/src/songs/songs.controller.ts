@@ -3,13 +3,13 @@ import { SongsService } from './songs.service';
 import { CreateSongDto } from './dto/create-song.dto';
 import { UpdateSongDto } from './dto/update-song.dto';
 import { SetLeadVocalsDto } from './dto/set-lead-vocals.dto';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 
 @Controller('songs')
-@UseGuards(AzureAdGuard)
+@UseGuards(UnifiedAuthGuard)
 export class SongsController {
   constructor(private readonly songsService: SongsService) {}
 

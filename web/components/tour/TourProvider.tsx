@@ -14,9 +14,9 @@ import type { TourStep, TourAction, ModalControls } from "@/lib/tour-engine";
 import { resolveSelector } from "@/lib/tour-engine";
 
 // Storage keys
-const COMPLETED_TOURS_KEY = "pucmm-band-tours-completed-v4";
-const WELCOME_SEEN_KEY = "pucmm-band-welcome-seen-v4";
-const LAST_ROLE_KEY = "pucmm-band-last-role";
+const COMPLETED_TOURS_KEY = "band-app-tours-completed-v4";
+const WELCOME_SEEN_KEY = "band-app-welcome-seen-v4";
+const LAST_ROLE_KEY = "band-app-last-role";
 
 export type MiniTourId =
   | "nav-overview"

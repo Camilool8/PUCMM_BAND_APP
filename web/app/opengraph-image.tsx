@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { env } from "@/lib/env";
 
 export const runtime = "edge";
 
@@ -55,7 +56,7 @@ export default function OpenGraphImage() {
               color: "#FFD200",
             }}
           >
-            P
+            {env.orgName.charAt(0)}
           </span>
         </div>
 
@@ -69,7 +70,7 @@ export default function OpenGraphImage() {
             marginBottom: "16px",
           }}
         >
-          PUCMM Band App
+          {env.orgName}
         </h1>
 
         {/* Subtitle */}
@@ -92,7 +93,7 @@ export default function OpenGraphImage() {
             color: "rgba(255, 255, 255, 0.4)",
           }}
         >
-          pucmm-band.cjoga.cloud
+          {env.siteUrl.replace(/^https?:\/\//, "")}
         </div>
       </div>
     ),

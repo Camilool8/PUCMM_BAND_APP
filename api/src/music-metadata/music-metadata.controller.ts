@@ -1,10 +1,10 @@
 import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
 import { MusicMetadataService } from './music-metadata.service';
 import { ResolveLinkDto } from './dto/resolve-link.dto';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 
 @Controller('music-metadata')
-@UseGuards(AzureAdGuard)
+@UseGuards(UnifiedAuthGuard)
 export class MusicMetadataController {
   constructor(private readonly musicMetadataService: MusicMetadataService) {}
 

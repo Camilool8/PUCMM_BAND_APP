@@ -17,10 +17,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'placehold.co',
       },
-      {
-        protocol: 'https',
-        hostname: 'pucmm-band-api.cjoga.cloud',
-      },
+      // Remote API hostname for images (derived from NEXT_PUBLIC_API_URL env var)
+      ...(process.env.NEXT_PUBLIC_API_URL
+        ? [{
+            protocol: new URL(process.env.NEXT_PUBLIC_API_URL).protocol.replace(':', '') as 'http' | 'https',
+            hostname: new URL(process.env.NEXT_PUBLIC_API_URL).hostname,
+            ...(new URL(process.env.NEXT_PUBLIC_API_URL).port ? { port: new URL(process.env.NEXT_PUBLIC_API_URL).port } : {}),
+          }]
+        : []),
       {
         protocol: 'http',
         hostname: 'localhost',

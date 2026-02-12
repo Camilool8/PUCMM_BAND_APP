@@ -15,13 +15,13 @@ export interface BackgroundPreset {
   preview: string;
 }
 
-// Default background - attractive PUCMM-themed gradient
-export const DEFAULT_BACKGROUND_ID = "pucmm-night";
+// Default background - institutional themed gradient
+export const DEFAULT_BACKGROUND_ID = "institutional";
 
 export const BACKGROUND_PRESETS: BackgroundPreset[] = [
   {
-    id: "pucmm-night",
-    name: "PUCMM Nocturno",
+    id: "institutional",
+    name: "Institucional",
     description: "Azul institucional con destellos dorados",
     style: {
       background: `

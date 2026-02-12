@@ -19,14 +19,14 @@ import { ReorderSongsDto } from './dto/reorder-songs.dto';
 import { ReorderSetlistDto } from './dto/reorder-setlist.dto';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 import { Role } from '@prisma/client';
 
 // Only SUPERADMIN can manage events
 const EVENT_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('events')
-@UseGuards(AzureAdGuard)
+@UseGuards(UnifiedAuthGuard)
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 

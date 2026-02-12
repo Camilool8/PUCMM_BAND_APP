@@ -3,7 +3,7 @@
  * Uses IndexedDB to store compressed images locally for faster access
  */
 
-const DB_NAME = "pucmm-band-image-cache";
+const DB_NAME = "band-app-image-cache";
 const DB_VERSION = 1;
 const STORE_NAME = "images";
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days

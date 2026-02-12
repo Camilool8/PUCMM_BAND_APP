@@ -78,7 +78,7 @@ const GRADIENT_THEMES = [
     iconGradientTo: "blue-700",
   },
   {
-    name: "PUCMM",
+    name: "Institucional",
     gradientFrom: "brand-blue-primary/40",
     gradientVia: "indigo-600/20",
     iconGradientFrom: "brand-blue-primary",
@@ -254,7 +254,7 @@ export default function CreateEventModal({ isOpen, onClose, editEvent }: CreateE
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Navidad PUCMM"
+              placeholder="Ej: Navidad 2025"
               autoFocus
               className="w-full bg-surface-100/80 border border-surface-200 rounded-xl px-4 py-3.5 text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20 outline-none transition-all duration-200"
             />

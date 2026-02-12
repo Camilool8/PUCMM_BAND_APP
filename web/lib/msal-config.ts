@@ -2,15 +2,20 @@ import type { Configuration } from "@azure/msal-browser";
 import { env } from "./env";
 
 // Function to get config - only called on client side
-export function getMsalConfig(): Configuration {
-  const tenantId = env.azureAdTenantId;
+// Accepts optional overrides from org config, falls back to env vars
+export function getMsalConfig(opts?: {
+  tenantId?: string;
+  clientId?: string;
+}): Configuration {
+  const tenantId = opts?.tenantId || env.azureAdTenantId;
+  const clientId = opts?.clientId || env.azureAdClientId || "";
   const authority = tenantId
     ? `https://login.microsoftonline.com/${tenantId}`
     : "https://login.microsoftonline.com/organizations";
 
   return {
     auth: {
-      clientId: env.azureAdClientId || "",
+      clientId,
       authority,
       redirectUri: window.location.origin,
       postLogoutRedirectUri: window.location.origin,

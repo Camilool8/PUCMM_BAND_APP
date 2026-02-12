@@ -12,6 +12,7 @@ import { EventsModule } from './events/events.module';
 import { ConcertsModule } from './concerts/concerts.module';
 import { MusicMetadataModule } from './music-metadata/music-metadata.module';
 import { PublicMetadataModule } from './public-metadata/public-metadata.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PublicMetadataModule } from './public-metadata/public-metadata.module';
     ConcertsModule,
     MusicMetadataModule,
     PublicMetadataModule,
+    OrganizationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

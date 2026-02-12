@@ -46,32 +46,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!concert) {
     // Fallback metadata - still include OG image so it generates dynamically
     return {
-      title: "Concierto | PUCMM Band",
-      description: "Detalles del concierto - PUCMM Band",
+      title: `Concierto | ${env.orgName}`,
+      description: `Detalles del concierto - ${env.orgName}`,
       openGraph: {
         title: "Concierto",
-        description: "Detalles del concierto - PUCMM Band",
+        description: `Detalles del concierto - ${env.orgName}`,
         type: "website",
-        siteName: "PUCMM Band",
+        siteName: env.orgName,
         images: [
           {
             url: ogImageUrl,
             width: 1200,
             height: 630,
-            alt: "Concierto PUCMM Band",
+            alt: `Concierto ${env.orgName}`,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
-        title: "Concierto | PUCMM Band",
-        description: "Detalles del concierto - PUCMM Band",
+        title: `Concierto | ${env.orgName}`,
+        description: `Detalles del concierto - ${env.orgName}`,
         images: [ogImageUrl],
       },
     };
   }
 
-  const title = `${formatDate(concert.date)} | PUCMM Band`;
+  const title = `${formatDate(concert.date)} | ${env.orgName}`;
   const description = `${concert.eventName}${concert.location ? ` - ${concert.location}` : ""}`;
 
   return {
@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: formatDate(concert.date),
       description,
       type: "website",
-      siteName: "PUCMM Band",
+      siteName: env.orgName,
       images: [
         {
           url: ogImageUrl,

@@ -89,6 +89,100 @@ async function main() {
   }
 
   console.log('Default repertoire sections created/verified');
+
+  // Seed default organization
+  const org = await prisma.organization.upsert({
+    where: { slug: 'pucmm-band' },
+    update: {},
+    create: {
+      name: 'Banda Universitaria PUCMM',
+      slug: 'pucmm-band',
+      domain: 'pucmm-band.cjoga.cloud',
+      description:
+        'Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM',
+      logoInitial: 'P',
+      colorPrimary: '#0033A0',
+      colorSecondary: '#FFD200',
+      colorAccent: '#D22630',
+      allowedEmailDomains: ['ce.pucmm.edu.do'],
+      superadminEmail: SUPERADMIN_EMAIL,
+      metaTitle: 'PUCMM Band App',
+      metaDescription:
+        'Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM',
+      locale: 'es',
+    },
+  });
+
+  // Seed Azure AD auth provider
+  await prisma.authProvider.upsert({
+    where: {
+      organizationId_provider: {
+        organizationId: org.id,
+        provider: 'azure_ad',
+      },
+    },
+    update: {},
+    create: {
+      organizationId: org.id,
+      provider: 'azure_ad',
+      enabled: true,
+      isPrimary: true,
+      displayName: 'Correo Estudiantil PUCMM',
+      config: {
+        tenantId: process.env.AZURE_AD_TENANT_ID || '',
+        clientId: process.env.AZURE_AD_CLIENT_ID || '',
+      },
+    },
+  });
+
+  console.log(`Organization created/verified: ${org.name} (${org.slug})`);
+
+  // Optionally seed Google auth provider (if GOOGLE_CLIENT_ID is configured)
+  if (process.env.GOOGLE_CLIENT_ID) {
+    await prisma.authProvider.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId: org.id,
+          provider: 'google',
+        },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        provider: 'google',
+        enabled: true,
+        isPrimary: false,
+        displayName: 'Google',
+        config: {
+          clientId: process.env.GOOGLE_CLIENT_ID || '',
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+        },
+      },
+    });
+    console.log('Google auth provider seeded');
+  }
+
+  // Optionally seed email/password auth provider
+  if (process.env.ENABLE_EMAIL_PASSWORD_AUTH === 'true') {
+    await prisma.authProvider.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId: org.id,
+          provider: 'email_password',
+        },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        provider: 'email_password',
+        enabled: true,
+        isPrimary: false,
+        displayName: 'Correo y Contraseña',
+        config: { requireEmailVerification: false },
+      },
+    });
+    console.log('Email/password auth provider seeded');
+  }
 }
 
 main()

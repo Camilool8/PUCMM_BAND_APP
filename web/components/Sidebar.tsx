@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useOrgConfig } from "@/hooks/use-org-config";
 import { useTour } from "@/hooks/use-tour";
 import AdminUsersModal from "./AdminUsersModal";
 import UserProfileModal from "./UserProfileModal";
@@ -12,6 +13,7 @@ import UserProfileModal from "./UserProfileModal";
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, canManageUsers, logout } = useAuth();
+  const orgConfig = useOrgConfig();
   const { registerModal, unregisterModal } = useTour();
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -39,13 +41,13 @@ export default function Sidebar() {
         <div className="p-6">
           <h1 className="text-2xl font-bold tracking-tighter flex items-center gap-2">
             <span className="w-8 h-8 bg-brand-blue-primary text-brand-yellow rounded-full flex items-center justify-center text-lg font-black">
-              P
+              {orgConfig.logoInitial || orgConfig.name[0]}
             </span>
             <span>
               Band<span className="text-brand-yellow">App</span>
             </span>
           </h1>
-          <p className="text-xs text-gray-500 mt-1 ml-10">PUCMM Repertoire</p>
+          <p className="text-xs text-gray-500 mt-1 ml-10">{orgConfig.name}</p>
         </div>
 
         {/* Navigation */}

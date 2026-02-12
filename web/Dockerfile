@@ -1,5 +1,5 @@
 # =============================================================================
-# PUCMM Band App - Web Dockerfile
+# Band App - Web Dockerfile
 # Multi-stage optimized build for Next.js 16 with standalone output
 # =============================================================================
 

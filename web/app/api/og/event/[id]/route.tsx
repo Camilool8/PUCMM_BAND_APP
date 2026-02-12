@@ -137,7 +137,7 @@ export async function GET(
                 lineHeight: 1.1,
               }}
             >
-              {event?.name || "Evento PUCMM"}
+              {event?.name || "Evento"}
             </h1>
 
             {/* Description */}
@@ -179,10 +179,10 @@ export async function GET(
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: "24px", fontWeight: 900, color: "white" }}>P</span>
+            <span style={{ fontSize: "24px", fontWeight: 900, color: "white" }}>{env.orgName.charAt(0)}</span>
           </div>
           <span style={{ fontSize: "20px", color: "rgba(255, 255, 255, 0.5)" }}>
-            PUCMM Band App
+            {env.orgName}
           </span>
         </div>
       </div>

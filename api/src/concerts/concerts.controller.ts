@@ -18,7 +18,7 @@ import { ReorderSongsDto } from './dto/reorder-songs.dto';
 import { ReorderConcertSetlistDto } from './dto/reorder-setlist.dto';
 import { CreateConcertBlockDto } from './dto/create-block.dto';
 import { UpdateConcertBlockDto } from './dto/update-block.dto';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
@@ -26,7 +26,7 @@ import { Role } from '@prisma/client';
 const CONCERT_ADMIN_ROLES = [Role.SUPERADMIN];
 
 @Controller('concerts')
-@UseGuards(AzureAdGuard, RolesGuard)
+@UseGuards(UnifiedAuthGuard, RolesGuard)
 export class ConcertsController {
   constructor(private readonly concertsService: ConcertsService) {}
 

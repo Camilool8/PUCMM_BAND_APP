@@ -1,27 +1,29 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
 
+const orgName = env.orgName;
+
 export const metadata: Metadata = {
   title: "Repertorio",
-  description: "Repertorio musical de la Banda Universitaria PUCMM - Canciones activas, sugerencias y archivo",
+  description: `Repertorio musical de ${orgName} - Canciones activas, sugerencias y archivo`,
   openGraph: {
-    title: "Repertorio | PUCMM Band",
-    description: "Repertorio musical de la Banda Universitaria PUCMM - Canciones activas, sugerencias y archivo",
+    title: `Repertorio | ${orgName}`,
+    description: `Repertorio musical de ${orgName} - Canciones activas, sugerencias y archivo`,
     type: "website",
-    siteName: "PUCMM Band",
+    siteName: orgName,
     images: [
       {
         url: `${env.siteUrl}/opengraph-image`,
         width: 1200,
         height: 630,
-        alt: "PUCMM Band - Repertorio",
+        alt: `${orgName} - Repertorio`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Repertorio | PUCMM Band",
-    description: "Repertorio musical de la Banda Universitaria PUCMM",
+    title: `Repertorio | ${orgName}`,
+    description: `Repertorio musical de ${orgName}`,
     images: [`${env.siteUrl}/opengraph-image`],
   },
 };

@@ -4,15 +4,14 @@ import { BearerStrategy } from 'passport-azure-ad';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
-
-// Hardcoded SUPERADMIN email
-const SUPERADMIN_EMAIL = 'jcjg0001@ce.pucmm.edu.do';
+import { OrganizationsService } from '../organizations/organizations.service';
 
 @Injectable()
 export class AzureADStrategy extends PassportStrategy(BearerStrategy, 'azure-ad') {
   constructor(
     configService: ConfigService,
     private prisma: PrismaService,
+    private orgService: OrganizationsService,
   ) {
     const tenantId = configService.get('AZURE_AD_TENANT_ID') || 'common';
     const clientId = configService.get('AZURE_AD_CLIENT_ID');
@@ -30,13 +29,20 @@ export class AzureADStrategy extends PassportStrategy(BearerStrategy, 'azure-ad'
   async validate(payload: any) {
     const email = payload.preferred_username || payload.upn;
 
-    // Validate email domain restriction (case-insensitive)
-    if (!email?.toLowerCase().endsWith('@ce.pucmm.edu.do')) {
+    // Validate email domain from organization config
+    const allowedDomains = await this.orgService.getAllowedDomains();
+    const normalizedEmail = email?.toLowerCase();
+    const isAllowedDomain = allowedDomains.some((domain) =>
+      normalizedEmail?.endsWith(`@${domain.toLowerCase()}`),
+    );
+    if (!isAllowedDomain) {
       throw new Error('Unauthorized domain');
     }
 
-    const normalizedEmail = email.toLowerCase();
-    const isSuperAdmin = normalizedEmail === SUPERADMIN_EMAIL;
+    // Check superadmin from organization config
+    const superadminEmail = await this.orgService.getSuperadminEmail();
+    const isSuperAdmin =
+      normalizedEmail === superadminEmail.toLowerCase();
 
     // Upsert user in database
     const user = await this.prisma.user.upsert({

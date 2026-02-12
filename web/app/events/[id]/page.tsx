@@ -35,33 +35,33 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!event) {
     return {
-      title: "Evento | PUCMM Band",
-      description: "Detalles del evento - PUCMM Band",
+      title: `Evento | ${env.orgName}`,
+      description: `Detalles del evento - ${env.orgName}`,
       openGraph: {
         title: "Evento",
-        description: "Detalles del evento - PUCMM Band",
+        description: `Detalles del evento - ${env.orgName}`,
         type: "website",
-        siteName: "PUCMM Band",
+        siteName: env.orgName,
         images: [
           {
             url: ogImageUrl,
             width: 1200,
             height: 630,
-            alt: "Evento PUCMM Band",
+            alt: `Evento ${env.orgName}`,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
-        title: "Evento | PUCMM Band",
-        description: "Detalles del evento - PUCMM Band",
+        title: `Evento | ${env.orgName}`,
+        description: `Detalles del evento - ${env.orgName}`,
         images: [ogImageUrl],
       },
     };
   }
 
-  const title = `${event.name} | PUCMM Band`;
-  const description = event.description || `Evento ${event.name} - PUCMM Band`;
+  const title = `${event.name} | ${env.orgName}`;
+  const description = event.description || `Evento ${event.name} - ${env.orgName}`;
 
   return {
     title,
@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: event.name,
       description,
       type: "website",
-      siteName: "PUCMM Band",
+      siteName: env.orgName,
       images: [
         {
           url: ogImageUrl,

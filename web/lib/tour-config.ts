@@ -103,7 +103,7 @@ export const miniTours: MiniTour[] = [
       {
         id: "nav-welcome",
         popover: {
-          title: "¡Bienvenido a PUCMM Band!",
+          title: "¡Bienvenido a BandApp!",
           description: "Te mostraremos cómo navegar. En móvil usa la barra inferior, en desktop el menú lateral.",
         },
       },

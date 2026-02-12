@@ -10,7 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { AzureAdGuard } from '../auth/azure-ad.guard';
+import { UnifiedAuthGuard } from '../auth/unified-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
@@ -23,7 +23,7 @@ const VALID_ROLES = Object.values(Role);
 const EDITABLE_PROFILE_ROLES = [Role.SUPERADMIN, Role.MEMBER];
 
 @Controller('users')
-@UseGuards(AzureAdGuard)
+@UseGuards(UnifiedAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

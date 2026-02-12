@@ -50,6 +50,13 @@ model User {
   bio            String?  // Short user bio
   jobTitle       String?  // From Azure AD
   department     String?  // From Azure AD
+
+  // Multi-provider auth fields
+  passwordHash   String?              // For email/password auth (bcrypt)
+  googleId       String?  @unique     // Google OAuth subject ID
+  authProvider   String   @default("azure_ad") // "azure_ad" | "google" | "email_password"
+  emailVerified  Boolean  @default(false)      // Auto-true for Azure AD & Google
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -286,4 +293,53 @@ model RepertoireSection {
   updatedAt       DateTime @updatedAt
 
   @@map("repertoire_sections")
+}
+
+model Organization {
+  id              String   @id @default(uuid())
+  name            String                          // e.g., "Banda Universitaria PUCMM"
+  slug            String   @unique                // e.g., "pucmm-band"
+  domain          String?                         // e.g., "pucmm-band.cjoga.cloud"
+  description     String?
+  logoUrl         String?
+  logoInitial     String?                         // Single character, e.g., "P"
+
+  // Branding - hex color values
+  colorPrimary    String   @default("#0033A0")
+  colorSecondary  String   @default("#FFD200")
+  colorAccent     String   @default("#D22630")
+
+  // Auth configuration
+  allowedEmailDomains String[]                    // e.g., ["ce.pucmm.edu.do"]
+  superadminEmail     String
+
+  // Metadata for SEO / public pages
+  metaTitle       String?
+  metaDescription String?
+  locale          String   @default("es")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  authProviders   AuthProvider[]
+
+  @@map("organizations")
+}
+
+model AuthProvider {
+  id             String       @id @default(uuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  provider       String                           // "azure_ad", "google", "email_password"
+  enabled        Boolean      @default(true)
+  isPrimary      Boolean      @default(false)
+  displayName    String?                          // e.g., "Correo Estudiantil PUCMM"
+  config         Json         @default("{}")      // Provider-specific config (tenantId, clientId, etc.)
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, provider])
+  @@map("auth_providers")
 }

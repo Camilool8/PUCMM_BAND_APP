@@ -35,35 +35,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!song) {
     return {
-      title: "Cancion | PUCMM Band",
-      description: "Detalles de la cancion - PUCMM Band",
+      title: `Cancion | ${env.orgName}`,
+      description: `Detalles de la cancion - ${env.orgName}`,
       openGraph: {
         title: "Cancion",
-        description: "Detalles de la cancion - PUCMM Band",
+        description: `Detalles de la cancion - ${env.orgName}`,
         type: "music.song",
-        siteName: "PUCMM Band",
+        siteName: env.orgName,
         images: [
           {
             url: ogImageUrl,
             width: 1200,
             height: 630,
-            alt: "Cancion PUCMM Band",
+            alt: `Cancion ${env.orgName}`,
           },
         ],
       },
       twitter: {
         card: "summary_large_image",
-        title: "Cancion | PUCMM Band",
-        description: "Detalles de la cancion - PUCMM Band",
+        title: `Cancion | ${env.orgName}`,
+        description: `Detalles de la cancion - ${env.orgName}`,
         images: [ogImageUrl],
       },
     };
   }
 
-  const title = `${song.title} - ${song.artist} | PUCMM Band`;
+  const title = `${song.title} - ${song.artist} | ${env.orgName}`;
   const description = song.genre
-    ? `${song.title} de ${song.artist} (${song.genre}) - Repertorio PUCMM Band`
-    : `${song.title} de ${song.artist} - Repertorio PUCMM Band`;
+    ? `${song.title} de ${song.artist} (${song.genre}) - Repertorio ${env.orgName}`
+    : `${song.title} de ${song.artist} - Repertorio ${env.orgName}`;
 
   return {
     title,
@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${song.title} - ${song.artist}`,
       description,
       type: "music.song",
-      siteName: "PUCMM Band",
+      siteName: env.orgName,
       images: [
         {
           url: ogImageUrl,

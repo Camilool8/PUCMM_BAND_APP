@@ -251,7 +251,7 @@ export default function ConcertsPage() {
           <div className="flex-1 min-w-0 pb-1">
             <div className="flex items-center gap-2 mb-1">
               <p className="text-xs md:text-sm font-medium text-white/60 uppercase tracking-wider">
-                {isConcertSelected ? "Concierto" : "PUCMM Band"}
+                {isConcertSelected ? "Concierto" : "Conciertos"}
               </p>
               {isConcertSelected && isUpcoming && (
                 <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500 text-white uppercase font-medium">

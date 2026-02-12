@@ -180,7 +180,7 @@ export default function CreateConcertModal({
               <input
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Ej: Auditorio Principal PUCMM"
+                placeholder="Ej: Auditorio Principal"
                 className="w-full bg-surface-100/80 border border-surface-200 rounded-xl pl-11 pr-4 py-3.5 text-white placeholder:text-gray-500 focus:border-brand-yellow focus:ring-2 focus:ring-brand-yellow/20 outline-none transition-all duration-200"
               />
             </div>

@@ -169,7 +169,7 @@ export async function GET(
                 textTransform: "capitalize",
               }}
             >
-              {concert ? formatDate(concert.date) : "Concierto PUCMM"}
+              {concert ? formatDate(concert.date) : "Concierto"}
             </h1>
 
             {/* Event name and location */}
@@ -180,7 +180,7 @@ export async function GET(
                 margin: 0,
               }}
             >
-              {concert?.eventName || "PUCMM Band"}
+              {concert?.eventName || env.orgName}
               {concert?.location && ` - ${concert.location}`}
             </p>
           </div>
@@ -207,10 +207,10 @@ export async function GET(
               justifyContent: "center",
             }}
           >
-            <span style={{ fontSize: "24px", fontWeight: 900, color: "white" }}>P</span>
+            <span style={{ fontSize: "24px", fontWeight: 900, color: "white" }}>{env.orgName.charAt(0)}</span>
           </div>
           <span style={{ fontSize: "20px", color: "rgba(255, 255, 255, 0.5)" }}>
-            PUCMM Band App
+            {env.orgName}
           </span>
         </div>
       </div>

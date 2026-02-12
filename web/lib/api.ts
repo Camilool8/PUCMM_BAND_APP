@@ -361,6 +361,9 @@ export interface ResolveLinkResponse {
 
 export type MusicPlatform = 'spotify' | 'youtube' | 'apple_music' | 'unknown';
 
+// Re-export OrgConfig type for convenience
+export type { OrgConfig } from "@/hooks/use-org-config";
+
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -826,6 +829,28 @@ class ApiClient {
       body: JSON.stringify({ url }),
     });
   }
+
+  // ============================================================================
+  // Auth (email/password, token exchange)
+  // ============================================================================
+
+  async login(email: string, password: string): Promise<{ accessToken: string; expiresIn: number; user: DbUser }> {
+    return this.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  }
+
+  async register(email: string, password: string, name?: string): Promise<{ accessToken: string; expiresIn: number; user: DbUser }> {
+    return this.request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password, name }),
+    });
+  }
+
+  async exchangeAzureToken(): Promise<{ accessToken: string; expiresIn: number }> {
+    return this.request("/auth/exchange", { method: "POST" });
+  }
 }
 
 // Create a proxy that lazily initializes the API client
@@ -906,6 +931,9 @@ class ApiClientProxy {
   resolveMusicLink = (url: string) => this.client.resolveMusicLink(url);
   searchSongMetadata = (title: string, artist: string) => this.client.searchSongMetadata(title, artist);
   detectMusicPlatform = (url: string) => this.client.detectMusicPlatform(url);
+  login = (email: string, password: string) => this.client.login(email, password);
+  register = (email: string, password: string, name?: string) => this.client.register(email, password, name);
+  exchangeAzureToken = () => this.client.exchangeAzureToken();
 }
 
 export const api = new ApiClientProxy();

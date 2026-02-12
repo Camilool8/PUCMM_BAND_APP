@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlatformRole {
+  PLATFORM_ADMIN
+  PLATFORM_VIEWER
+}
+
+enum OrgStatus {
+  ACTIVE
+  PROVISIONING
+  SUSPENDED
+  ARCHIVED
+}
+
+model PlatformUser {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  name         String?
+  passwordHash String
+  role         PlatformRole @default(PLATFORM_VIEWER)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("platform_users")
+}
+
+model OrgRegistry {
+  id                  String    @id @default(uuid())
+  name                String
+  slug                String    @unique
+  apiUrl              String?
+  frontendUrl         String?
+  status              OrgStatus @default(PROVISIONING)
+  adminEmail          String
+  adminName           String?
+  allowedEmailDomains String[]
+  authProviders       String[]
+  colorPrimary        String    @default("#0033A0")
+  logoUrl             String?
+  lastHealthCheck     DateTime?
+  isHealthy           Boolean   @default(true)
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("org_registry")
+}
+
+model PlatformAuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  orgId     String?
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@map("platform_audit_logs")
+}

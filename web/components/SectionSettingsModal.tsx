@@ -61,7 +61,7 @@ const getColor = (colorName: string): string => COLOR_MAP[colorName] || colorNam
 // Predefined gradient themes
 const GRADIENT_THEMES = [
   {
-    name: "Azul PUCMM",
+    name: "Institucional",
     gradientFrom: "brand-blue-primary/40",
     gradientVia: "indigo-600/20",
     iconGradientFrom: "brand-blue-primary",

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { env } from "@/lib/env";
 import Sidebar from "@/components/Sidebar";
 import BottomNav from "@/components/BottomNav";
 import AuthGuard from "@/components/AuthGuard";
@@ -13,24 +14,28 @@ import { Providers } from "@/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
+const orgName = env.orgName;
+const orgDescription = env.orgDescription;
+const siteUrl = env.siteUrl;
+
 export const metadata: Metadata = {
   title: {
-    default: "PUCMM Band App",
-    template: "%s | PUCMM Band",
+    default: orgName,
+    template: `%s | ${orgName}`,
   },
-  description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
-  metadataBase: new URL("https://pucmm-band.cjoga.cloud"),
+  description: orgDescription,
+  metadataBase: new URL(siteUrl || "http://localhost:3000"),
   openGraph: {
-    title: "PUCMM Band App",
-    description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
-    siteName: "PUCMM Band",
+    title: orgName,
+    description: orgDescription,
+    siteName: orgName,
     locale: "es_DO",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PUCMM Band App",
-    description: "Sistema de Gestion de Repertorio para la Banda Universitaria PUCMM",
+    title: orgName,
+    description: orgDescription,
   },
   appleWebApp: {
     capable: true,
