@@ -7,9 +7,10 @@ import { SpotifyProvider } from './providers/spotify.provider';
 import { ITunesProvider } from './providers/itunes.provider';
 import { ReccoBeatsProvider } from './providers/reccobeats.provider';
 import { GetSongBpmProvider } from './providers/getsongbpm.provider';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, AuthModule],
   controllers: [MusicMetadataController],
   providers: [
     MusicMetadataService,

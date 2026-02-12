@@ -110,7 +110,7 @@ next-env.d.ts
 .cache/
 
 # Uploaded files (local storage)
-uploads/
+/api/uploads/
 storage/
 
 # Sentry
