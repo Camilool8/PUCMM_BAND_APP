@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateSectionDto } from './dto/update-section.dto';
 
@@ -18,28 +18,45 @@ export class RepertoireSectionsService {
     });
 
     if (!section) {
-      throw new NotFoundException(`Section with key "${key}" not found`);
+      // Return default section shape so frontend always gets data
+      return {
+        key,
+        title: key.charAt(0).toUpperCase() + key.slice(1),
+        subtitle: null,
+        iconName: null,
+        bannerUrl: null,
+        gradientFrom: null,
+        gradientVia: null,
+        gradientTo: null,
+        iconGradientFrom: null,
+        iconGradientTo: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
     }
 
     return section;
   }
 
   async update(key: string, updateDto: UpdateSectionDto) {
-    // Check if section exists
-    await this.findByKey(key);
-
-    return this.prisma.repertoireSection.update({
+    const defaultTitle = key.charAt(0).toUpperCase() + key.slice(1);
+    return this.prisma.repertoireSection.upsert({
       where: { key },
-      data: updateDto,
+      update: updateDto,
+      create: {
+        key,
+        title: defaultTitle,
+        ...updateDto,
+      },
     });
   }
 
   async clearBanner(key: string) {
-    await this.findByKey(key);
-
-    return this.prisma.repertoireSection.update({
+    const defaultTitle = key.charAt(0).toUpperCase() + key.slice(1);
+    return this.prisma.repertoireSection.upsert({
       where: { key },
-      data: { bannerUrl: null },
+      update: { bannerUrl: null },
+      create: { key, title: defaultTitle, bannerUrl: null },
     });
   }
 }

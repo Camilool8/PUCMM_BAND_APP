@@ -38,6 +38,14 @@ interface SeedSection {
   iconGradientTo?: string;
 }
 
+interface SeedLocation {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters?: number;
+}
+
 interface SeedData {
   superadminEmail: string;
   organization: SeedOrganization;
@@ -47,6 +55,7 @@ interface SeedData {
     emailPassword: SeedAuthProvider;
   };
   repertoireSections: SeedSection[];
+  locations?: SeedLocation[];
 }
 
 function loadSeedData(): SeedData {
@@ -186,6 +195,27 @@ async function main() {
       },
     });
     console.log('Email/password auth provider seeded');
+  }
+
+  // Seed locations (if provided)
+  if (seedData.locations && seedData.locations.length > 0) {
+    for (const location of seedData.locations) {
+      const existing = await prisma.location.findFirst({
+        where: { name: location.name },
+      });
+      if (!existing) {
+        await prisma.location.create({
+          data: {
+            name: location.name,
+            address: location.address || null,
+            latitude: location.latitude,
+            longitude: location.longitude,
+            radiusMeters: location.radiusMeters || 200,
+          },
+        });
+      }
+    }
+    console.log(`${seedData.locations.length} location(s) seeded`);
   }
 }
 

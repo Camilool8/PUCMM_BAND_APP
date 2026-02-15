@@ -138,6 +138,8 @@ export function useAuth() {
   const canEditProfile = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
   const canUploadMedia = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
   const canDeleteAssets = effectiveRole === "SUPERADMIN";
+  const canManageRehearsals = effectiveRole === "SUPERADMIN";
+  const canCheckIn = effectiveRole === "SUPERADMIN" || effectiveRole === "MEMBER";
 
   const showDevToggle =
     process.env.NODE_ENV === "development" &&
@@ -233,6 +235,8 @@ export function useAuth() {
     canEditProfile,
     canUploadMedia,
     canDeleteAssets,
+    canManageRehearsals,
+    canCheckIn,
     // Dev mode
     showDevToggle,
     devViewRole,

@@ -38,6 +38,13 @@ enum BlockType {
   CUSTOM         // Personalizado
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
 model User {
   id             String   @id @default(uuid())
   email          String   @unique
@@ -60,10 +67,11 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  suggestions Song[]      @relation("UserSuggestions")
-  leadVocals  Song[]      @relation("SongLeadVocals")
-  songVotes   SongVote[]
-  auditLogs   AuditLog[]
+  suggestions            Song[]      @relation("UserSuggestions")
+  leadVocals             Song[]      @relation("SongLeadVocals")
+  songVotes              SongVote[]
+  auditLogs              AuditLog[]
+  rehearsalAttendances   RehearsalAttendance[]
 
   @@map("users")
 }
@@ -94,10 +102,11 @@ model Song {
 
   versions      SongVersion[]
   tags          Tag[]
-  eventSongs    EventSong[]    // Explicit junction for events
-  concertSongs  ConcertSong[]  // Explicit junction for concerts
-  assets        Asset[]
-  votes         SongVote[]
+  eventSongs     EventSong[]     // Explicit junction for events
+  concertSongs   ConcertSong[]   // Explicit junction for concerts
+  rehearsalSongs RehearsalSong[] // Explicit junction for rehearsals
+  assets         Asset[]
+  votes          SongVote[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -148,6 +157,7 @@ model Event {
   eventSongs  EventSong[]   // Explicit junction for ordering
   eventBlocks EventBlock[]  // Non-song setlist items (interludes, breaks, etc.)
   concerts    Concert[]
+  rehearsals  Rehearsal[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -272,6 +282,95 @@ model AuditLog {
   timestamp DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model Location {
+  id           String      @id @default(uuid())
+  name         String                          // e.g., "Auditorio PUCMM", "Sala de Ensayos"
+  address      String?
+  latitude     Float
+  longitude    Float
+  radiusMeters Int         @default(200)       // GPS validation radius in meters
+
+  rehearsals   Rehearsal[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@map("locations")
+}
+
+model Rehearsal {
+  id          String    @id @default(uuid())
+  date        DateTime
+  notes       String?
+
+  // Optional parent event (null = generic rehearsal)
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String?
+
+  // Predefined location with GPS coordinates
+  location    Location  @relation(fields: [locationId], references: [id])
+  locationId  String
+
+  rehearsalSongs  RehearsalSong[]
+  rehearsalBlocks RehearsalBlock[]
+  attendances     RehearsalAttendance[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("rehearsals")
+}
+
+// Junction table for Rehearsal-Song with ordering
+model RehearsalSong {
+  id          String    @id @default(uuid())
+  rehearsalId String
+  songId      String
+  order       Int       @default(0)
+  rehearsal   Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+  song        Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([rehearsalId, songId])
+  @@map("rehearsal_songs")
+}
+
+// Non-song setlist items for Rehearsals
+model RehearsalBlock {
+  id              String    @id @default(uuid())
+  rehearsalId     String
+  type            BlockType @default(CUSTOM)
+  label           String
+  durationMinutes Int?
+  notes           String?
+  order           Int       @default(0)
+  rehearsal       Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+
+  @@map("rehearsal_blocks")
+}
+
+model RehearsalAttendance {
+  id          String           @id @default(uuid())
+  rehearsalId String
+  userId      String
+  status      AttendanceStatus @default(PRESENT)
+  checkedInAt DateTime         @default(now())
+  latitude    Float?           // GPS coordinates at check-in time
+  longitude   Float?
+  markedBy    String?          // userId of admin if marked by SUPERADMIN
+  notes       String?
+
+  rehearsal   Rehearsal @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([rehearsalId, userId])
+  @@map("rehearsal_attendances")
 }
 
 model RepertoireSection {

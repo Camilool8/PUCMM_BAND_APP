@@ -32,13 +32,16 @@ import {
   Search,
   Check,
   Layers,
+  ClipboardCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEvent, useDeleteEvent, useAddSongToEvent, useAddSongsToEventBulk, useRemoveSongFromEvent, useReorderEventSetlist, useAddBlockToEvent, useRemoveBlockFromEvent } from "@/hooks/use-events";
 import { useDeleteConcert } from "@/hooks/use-concerts";
+import { useRehearsalsByEvent, useDeleteRehearsal } from "@/hooks/use-rehearsals";
 import { useSongs } from "@/hooks/use-songs";
 import SongDetailModal from "@/components/SongDetailModal";
 import CreateConcertModal from "@/components/CreateConcertModal";
+import CreateRehearsalModal from "@/components/CreateRehearsalModal";
 import SortableSongItem from "@/components/SortableSongItem";
 import SortableBlockItem, { BLOCK_LABELS } from "@/components/SortableBlockItem";
 import type { Event, Song, Concert, SetlistItem, BlockType } from "@/lib/api";
@@ -84,6 +87,8 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   const { data: allSongs } = useSongs();
   const deleteEvent = useDeleteEvent();
   const deleteConcert = useDeleteConcert();
+  const { data: eventRehearsals } = useRehearsalsByEvent(event.id);
+  const deleteRehearsal = useDeleteRehearsal();
   const addSongToEvent = useAddSongToEvent();
   const addSongsBulk = useAddSongsToEventBulk();
   const removeSongFromEvent = useRemoveSongFromEvent();
@@ -98,6 +103,8 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   const [showCreateConcert, setShowCreateConcert] = useState(false);
   const [editConcert, setEditConcert] = useState<Concert | null>(null);
   const [deletingConcertId, setDeletingConcertId] = useState<string | null>(null);
+  const [showCreateRehearsal, setShowCreateRehearsal] = useState(false);
+  const [deletingRehearsalId, setDeletingRehearsalId] = useState<string | null>(null);
   const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(new Set());
   const [blockType, setBlockType] = useState<BlockType>("INTERLUDE");
   const [blockLabel, setBlockLabel] = useState("");
@@ -189,6 +196,15 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
     setEditConcert(null);
   };
 
+  const handleRehearsalClick = (rehearsalId: string) => router.push(`/rehearsals?rehearsal=${rehearsalId}`);
+
+  const handleDeleteRehearsal = async (rehearsalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeletingRehearsalId(rehearsalId);
+    await deleteRehearsal.mutateAsync({ id: rehearsalId, eventId: event.id });
+    setDeletingRehearsalId(null);
+  };
+
   // Drag-and-drop with optimistic reorder
   const reorderSetlist = useReorderEventSetlist();
 
@@ -213,6 +229,10 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   };
 
   const sortedConcerts = [...eventConcerts].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  const sortedRehearsals = [...(eventRehearsals || [])].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
@@ -514,6 +534,82 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
         )}
       </div>
 
+      {/* Rehearsals Section */}
+      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="flex items-center gap-2 text-white font-semibold text-lg">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <ClipboardCheck size={16} className="text-emerald-400" />
+            </div>
+            Ensayos
+            {sortedRehearsals.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 text-white font-medium">{sortedRehearsals.length}</span>
+            )}
+          </h3>
+          {canManageEvents && (
+            <button onClick={() => setShowCreateRehearsal(true)} className="flex items-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-emerald-500/10">
+              <Plus size={16} />
+              Nuevo Ensayo
+            </button>
+          )}
+        </div>
+
+        {sortedRehearsals.length > 0 ? (
+          <div className="space-y-2">
+            {sortedRehearsals.map((rehearsal, index) => {
+              const rehearsalDate = new Date(rehearsal.date);
+              const isUpcoming = rehearsalDate >= new Date();
+              const isDeleting = deletingRehearsalId === rehearsal.id;
+              return (
+                <div
+                  key={rehearsal.id || `rehearsal-${index}`}
+                  onClick={() => handleRehearsalClick(rehearsal.id)}
+                  className={`flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-surface-100/50 border border-surface-200/30 hover:border-white/10 transition-all cursor-pointer group ${isDeleting ? "opacity-50" : ""}`}
+                >
+                  <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center shrink-0 ${isUpcoming ? "bg-emerald-600" : "bg-gray-600"}`}>
+                    <ClipboardCheck size={18} className="text-white md:w-5 md:h-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm md:text-base text-white font-medium capitalize truncate max-w-[200px] sm:max-w-none">
+                        {rehearsalDate.toLocaleDateString("es-DO", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                      {isUpcoming && <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500 text-white uppercase font-medium shrink-0">Próximo</span>}
+                    </div>
+                    <div className="flex items-center gap-2 md:gap-3 mt-0.5 md:mt-1">
+                      {rehearsal.location && (
+                        <p className="text-xs md:text-sm text-gray-400 flex items-center gap-1 truncate max-w-[140px] sm:max-w-none">
+                          <MapPin size={10} className="shrink-0 md:w-3 md:h-3" /><span className="truncate">{rehearsal.location.name}</span>
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-500 shrink-0">{rehearsalDate.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}</p>
+                      {(rehearsal._count?.attendances || 0) > 0 && (
+                        <span className="text-xs text-gray-500 shrink-0 flex items-center gap-1">
+                          <Users size={10} />
+                          {rehearsal._count?.attendances}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {canManageEvents && (
+                    <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => handleDeleteRehearsal(rehearsal.id, e)} disabled={isDeleting} className="p-1.5 md:p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"><Trash2 size={14} /></button>
+                    </div>
+                  )}
+                  <ChevronRight size={14} className="text-gray-600 group-hover:text-gray-400 transition-colors shrink-0 md:w-4 md:h-4" />
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <ClipboardCheck size={32} className="mx-auto text-gray-600 mb-2" />
+            <p className="text-sm text-gray-500">No hay ensayos programados para este evento</p>
+            {canManageEvents && <button onClick={() => setShowCreateRehearsal(true)} className="mt-3 text-emerald-400 text-sm hover:underline">Crear el primer ensayo</button>}
+          </div>
+        )}
+      </div>
+
       {/* Admin Actions */}
       {canManageEvents && (
         <div className="bg-surface-100/30 p-4 rounded-2xl border border-surface-200/30">
@@ -536,6 +632,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
       {/* Modals */}
       <SongDetailModal song={selectedSong} onClose={() => setSelectedSong(null)} />
       <CreateConcertModal isOpen={showCreateConcert} onClose={handleCloseConcertModal} event={displayEvent} editConcert={editConcert} />
+      <CreateRehearsalModal isOpen={showCreateRehearsal} onClose={() => setShowCreateRehearsal(false)} defaultEventId={event.id} />
     </div>
   );
 }

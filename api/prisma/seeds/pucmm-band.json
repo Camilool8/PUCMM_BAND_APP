@@ -89,6 +89,33 @@
       "gradientTo": "transparent",
       "iconGradientFrom": "purple-600",
       "iconGradientTo": "pink-500"
+    },
+    {
+      "key": "ensayos",
+      "title": "Ensayos",
+      "subtitle": "Programa de ensayos y asistencia",
+      "iconName": "Music",
+      "gradientFrom": "emerald-600/40",
+      "gradientVia": "teal-500/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "emerald-600",
+      "iconGradientTo": "teal-500"
+    }
+  ],
+  "locations": [
+    {
+      "name": "Auditorio PUCMM",
+      "address": "Campus Santiago, PUCMM",
+      "latitude": 19.4517,
+      "longitude": -70.6879,
+      "radiusMeters": 200
+    },
+    {
+      "name": "Sala de Ensayos",
+      "address": "Edificio de Humanidades, PUCMM",
+      "latitude": 19.4515,
+      "longitude": -70.6875,
+      "radiusMeters": 150
     }
   ]
 }

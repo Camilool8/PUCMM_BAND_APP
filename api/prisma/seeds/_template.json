@@ -89,6 +89,26 @@
       "gradientTo": "transparent",
       "iconGradientFrom": "purple-600",
       "iconGradientTo": "pink-500"
+    },
+    {
+      "key": "ensayos",
+      "title": "Rehearsals",
+      "subtitle": "Rehearsal schedule and attendance",
+      "iconName": "Music",
+      "gradientFrom": "emerald-600/40",
+      "gradientVia": "teal-500/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "emerald-600",
+      "iconGradientTo": "teal-500"
+    }
+  ],
+  "locations": [
+    {
+      "name": "Main Auditorium",
+      "address": "Campus Main Building",
+      "latitude": 0.0,
+      "longitude": 0.0,
+      "radiusMeters": 200
     }
   ]
 }

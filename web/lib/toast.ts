@@ -33,6 +33,25 @@ export const TOAST_MESSAGES = {
   SONGS_COPIED_FROM_EVENT: "Setlist copiado del evento",
   BLOCK_ADDED_TO_CONCERT: "Bloque agregado al setlist",
 
+  // Rehearsals
+  REHEARSAL_CREATED: "Ensayo creado exitosamente",
+  REHEARSAL_UPDATED: "Ensayo actualizado",
+  REHEARSAL_DELETED: "Ensayo eliminado",
+  SONG_ADDED_TO_REHEARSAL: "Canción agregada al ensayo",
+  SONGS_ADDED_TO_REHEARSAL_BULK: "Canciones agregadas al ensayo",
+  SONG_REMOVED_FROM_REHEARSAL: "Canción removida del ensayo",
+  SONGS_COPIED_FROM_EVENT_TO_REHEARSAL: "Setlist copiado del evento",
+  BLOCK_ADDED_TO_REHEARSAL: "Bloque agregado al setlist",
+  CHECK_IN_SUCCESS: "Asistencia registrada exitosamente",
+  CHECK_IN_OUT_OF_RANGE: "Estás fuera del rango permitido",
+  ATTENDANCE_MARKED: "Asistencia marcada",
+  ATTENDANCE_REMOVED: "Asistencia removida",
+
+  // Locations
+  LOCATION_CREATED: "Ubicación creada exitosamente",
+  LOCATION_UPDATED: "Ubicación actualizada",
+  LOCATION_DELETED: "Ubicación eliminada",
+
   // Uploads
   UPLOAD_SUCCESS: "Archivo subido exitosamente",
   UPLOAD_ERROR: "Error al subir archivo",

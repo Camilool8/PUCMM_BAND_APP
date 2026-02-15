@@ -230,9 +230,11 @@ export interface Event {
   songs?: Song[];
   setlistItems?: SetlistItem[];
   concerts?: Concert[];
+  rehearsals?: Rehearsal[];
   _count?: {
     songs: number;
     concerts: number;
+    rehearsals?: number;
     blocks?: number;
   };
 }
@@ -268,6 +270,108 @@ export interface UpdateConcertDto {
   location?: string;
   notes?: string;
   songIds?: string[];
+}
+
+// ============================================================================
+// Locations Types
+// ============================================================================
+
+export interface Location {
+  id: string;
+  name: string;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  radiusMeters: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLocationDto {
+  name: string;
+  address?: string;
+  latitude: number;
+  longitude: number;
+  radiusMeters?: number;
+}
+
+export interface UpdateLocationDto {
+  name?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusMeters?: number;
+}
+
+// ============================================================================
+// Rehearsals Types
+// ============================================================================
+
+export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+
+export interface RehearsalAttendance {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string | null;
+    email: string;
+    avatarUrl: string | null;
+    instruments: string[];
+  };
+  status: AttendanceStatus;
+  checkedInAt: string;
+  latitude: number | null;
+  longitude: number | null;
+  markedBy: string | null;
+  notes: string | null;
+}
+
+export interface Rehearsal {
+  id: string;
+  date: string;
+  notes: string | null;
+  eventId: string | null;
+  locationId: string;
+  createdAt: string;
+  updatedAt: string;
+  // Relations
+  event?: Event;
+  location?: Location;
+  songs?: Song[];
+  setlistItems?: SetlistItem[];
+  attendances?: RehearsalAttendance[];
+  _count?: {
+    songs: number;
+    blocks?: number;
+    attendances?: number;
+  };
+}
+
+export interface CreateRehearsalDto {
+  date: string;
+  locationId: string;
+  eventId?: string;
+  notes?: string;
+  songIds?: string[];
+}
+
+export interface UpdateRehearsalDto {
+  date?: string;
+  locationId?: string;
+  notes?: string;
+  songIds?: string[];
+}
+
+export interface CheckInDto {
+  latitude: number;
+  longitude: number;
+}
+
+export interface AdminAttendanceDto {
+  userId: string;
+  status: AttendanceStatus;
+  notes?: string;
 }
 
 export interface CreateEventDto {
@@ -796,6 +900,140 @@ class ApiClient {
   }
 
   // ============================================================================
+  // Locations
+  // ============================================================================
+
+  async getLocations(): Promise<Location[]> {
+    return this.request<Location[]>("/locations");
+  }
+
+  async createLocation(data: CreateLocationDto): Promise<Location> {
+    return this.request<Location>("/locations", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateLocation(id: string, data: UpdateLocationDto): Promise<Location> {
+    return this.request<Location>(`/locations/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteLocation(id: string): Promise<void> {
+    await this.request(`/locations/${id}`, { method: "DELETE" });
+  }
+
+  // ============================================================================
+  // Rehearsals
+  // ============================================================================
+
+  async getRehearsals(): Promise<Rehearsal[]> {
+    return this.request<Rehearsal[]>("/rehearsals");
+  }
+
+  async getRehearsalsByEvent(eventId: string): Promise<Rehearsal[]> {
+    return this.request<Rehearsal[]>(`/rehearsals/event/${eventId}`);
+  }
+
+  async getRehearsal(id: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${id}`);
+  }
+
+  async createRehearsal(data: CreateRehearsalDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>("/rehearsals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRehearsal(id: string, data: UpdateRehearsalDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteRehearsal(id: string): Promise<void> {
+    await this.request(`/rehearsals/${id}`, { method: "DELETE" });
+  }
+
+  async addSongToRehearsal(rehearsalId: string, songId: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/songs`, {
+      method: "POST",
+      body: JSON.stringify({ songId }),
+    });
+  }
+
+  async addSongsToRehearsalBulk(rehearsalId: string, songIds: string[]): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/songs/bulk`, {
+      method: "POST",
+      body: JSON.stringify({ songIds }),
+    });
+  }
+
+  async removeSongFromRehearsal(rehearsalId: string, songId: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/songs/${songId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async copyEventSongsToRehearsal(rehearsalId: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/copy-from-event`, {
+      method: "POST",
+    });
+  }
+
+  async reorderRehearsalSetlist(rehearsalId: string, items: { id: string; itemType: "song" | "block" }[]): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/setlist/reorder`, {
+      method: "PATCH",
+      body: JSON.stringify({ items }),
+    });
+  }
+
+  async addBlockToRehearsal(rehearsalId: string, data: CreateBlockDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/blocks`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateRehearsalBlock(rehearsalId: string, blockId: string, data: UpdateBlockDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/blocks/${blockId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeBlockFromRehearsal(rehearsalId: string, blockId: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/blocks/${blockId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Attendance
+  async checkInToRehearsal(rehearsalId: string, data: CheckInDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/check-in`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async adminMarkAttendance(rehearsalId: string, data: AdminAttendanceDto): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/attendance`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async removeAttendance(rehearsalId: string, userId: string): Promise<Rehearsal> {
+    return this.request<Rehearsal>(`/rehearsals/${rehearsalId}/attendance/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ============================================================================
   // Music Metadata
   // ============================================================================
 
@@ -928,6 +1166,27 @@ class ApiClientProxy {
   addBlockToConcert = (concertId: string, data: CreateBlockDto) => this.client.addBlockToConcert(concertId, data);
   updateConcertBlock = (concertId: string, blockId: string, data: UpdateBlockDto) => this.client.updateConcertBlock(concertId, blockId, data);
   removeBlockFromConcert = (concertId: string, blockId: string) => this.client.removeBlockFromConcert(concertId, blockId);
+  getLocations = () => this.client.getLocations();
+  createLocation = (data: CreateLocationDto) => this.client.createLocation(data);
+  updateLocation = (id: string, data: UpdateLocationDto) => this.client.updateLocation(id, data);
+  deleteLocation = (id: string) => this.client.deleteLocation(id);
+  getRehearsals = () => this.client.getRehearsals();
+  getRehearsalsByEvent = (eventId: string) => this.client.getRehearsalsByEvent(eventId);
+  getRehearsal = (id: string) => this.client.getRehearsal(id);
+  createRehearsal = (data: CreateRehearsalDto) => this.client.createRehearsal(data);
+  updateRehearsal = (id: string, data: UpdateRehearsalDto) => this.client.updateRehearsal(id, data);
+  deleteRehearsal = (id: string) => this.client.deleteRehearsal(id);
+  addSongToRehearsal = (rehearsalId: string, songId: string) => this.client.addSongToRehearsal(rehearsalId, songId);
+  addSongsToRehearsalBulk = (rehearsalId: string, songIds: string[]) => this.client.addSongsToRehearsalBulk(rehearsalId, songIds);
+  removeSongFromRehearsal = (rehearsalId: string, songId: string) => this.client.removeSongFromRehearsal(rehearsalId, songId);
+  copyEventSongsToRehearsal = (rehearsalId: string) => this.client.copyEventSongsToRehearsal(rehearsalId);
+  reorderRehearsalSetlist = (rehearsalId: string, items: { id: string; itemType: "song" | "block" }[]) => this.client.reorderRehearsalSetlist(rehearsalId, items);
+  addBlockToRehearsal = (rehearsalId: string, data: CreateBlockDto) => this.client.addBlockToRehearsal(rehearsalId, data);
+  updateRehearsalBlock = (rehearsalId: string, blockId: string, data: UpdateBlockDto) => this.client.updateRehearsalBlock(rehearsalId, blockId, data);
+  removeBlockFromRehearsal = (rehearsalId: string, blockId: string) => this.client.removeBlockFromRehearsal(rehearsalId, blockId);
+  checkInToRehearsal = (rehearsalId: string, data: CheckInDto) => this.client.checkInToRehearsal(rehearsalId, data);
+  adminMarkAttendance = (rehearsalId: string, data: AdminAttendanceDto) => this.client.adminMarkAttendance(rehearsalId, data);
+  removeAttendance = (rehearsalId: string, userId: string) => this.client.removeAttendance(rehearsalId, userId);
   resolveMusicLink = (url: string) => this.client.resolveMusicLink(url);
   searchSongMetadata = (title: string, artist: string) => this.client.searchSongMetadata(title, artist);
   detectMusicPlatform = (url: string) => this.client.detectMusicPlatform(url);

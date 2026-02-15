@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket, BookOpen } from "lucide-react";
+import { Home, Music, Calendar, LogOut, Users, Shield, Settings, Ticket, BookOpen, ListMusic } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useOrgConfig } from "@/hooks/use-org-config";
 import { useTour } from "@/hooks/use-tour";
@@ -99,6 +99,18 @@ export default function Sidebar() {
           >
             <Ticket size={20} />
             Conciertos
+          </Link>
+          <Link
+            href="/rehearsals"
+            data-tour="nav-rehearsals"
+            className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+              pathname === "/rehearsals"
+                ? "bg-brand-blue-primary text-white shadow-lg shadow-blue-900/50"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <ListMusic size={20} />
+            Ensayos
           </Link>
           <Link
             href="/guides"

@@ -28,6 +28,7 @@ import {
   AlertCircle,
   Play,
   BookOpen,
+  ClipboardCheck,
 } from "lucide-react";
 import type { Song } from "@/lib/api";
 
@@ -155,7 +156,7 @@ export default function Home() {
           </section>
 
           {/* Admin Quick Actions */}
-          <section data-tour="admin-actions" className="grid grid-cols-3 gap-3">
+          <section data-tour="admin-actions" className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Link
               href="/songs"
               className="rounded-xl p-4 bg-linear-to-br from-brand-blue-primary/20 to-brand-blue-primary/5 border border-brand-blue-primary/30 hover:border-brand-blue-primary/50 transition-all group"
@@ -183,6 +184,16 @@ export default function Home() {
               <Ticket size={20} className="text-purple-400 mb-2" />
               <p className="text-sm font-medium text-white group-hover:text-purple-400 transition-colors">
                 Ver Conciertos
+              </p>
+            </Link>
+
+            <Link
+              href="/rehearsals"
+              className="rounded-xl p-4 bg-linear-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 hover:border-emerald-500/50 transition-all group"
+            >
+              <ClipboardCheck size={20} className="text-emerald-400 mb-2" />
+              <p className="text-sm font-medium text-white group-hover:text-emerald-400 transition-colors">
+                Ver Ensayos
               </p>
             </Link>
           </section>

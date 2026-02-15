@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music, Calendar, Users, User, BookOpen, MoreHorizontal, X, Ticket, Settings } from "lucide-react";
+import { Home, Music, Calendar, Users, User, BookOpen, MoreHorizontal, X, Ticket, Settings, ListMusic } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTour } from "@/hooks/use-tour";
 import AdminUsersModal from "./AdminUsersModal";
@@ -42,6 +42,7 @@ export default function BottomNav() {
 
   // More menu items
   const MORE_NAV_ITEMS = [
+    { href: "/rehearsals", icon: ListMusic, label: "Ensayos", tour: "nav-rehearsals-mobile" },
     { href: "/concerts", icon: Ticket, label: "Conciertos", tour: "nav-concerts-mobile" },
     { href: "/guides", icon: BookOpen, label: "Guías", tour: "nav-guides-mobile" },
   ];

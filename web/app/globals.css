@@ -239,3 +239,30 @@ body {
 .tour-spotlight-highlight {
   animation: tour-spotlight-pulse 2s ease-in-out infinite;
 }
+
+/* ============================================================================
+   Leaflet Dark Theme Overrides
+   ============================================================================ */
+
+.leaflet-container {
+  background: #0F172A;
+  font-family: var(--font-inter);
+}
+
+.leaflet-control-zoom a {
+  background: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: #334155 !important;
+}
+.leaflet-control-zoom a:hover {
+  background: #334155 !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.8) !important;
+  color: #64748B !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a {
+  color: #94A3B8 !important;
+}

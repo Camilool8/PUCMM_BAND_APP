@@ -13,6 +13,8 @@ import { ConcertsModule } from './concerts/concerts.module';
 import { MusicMetadataModule } from './music-metadata/music-metadata.module';
 import { PublicMetadataModule } from './public-metadata/public-metadata.module';
 import { OrganizationsModule } from './organizations/organizations.module';
+import { LocationsModule } from './locations/locations.module';
+import { RehearsalsModule } from './rehearsals/rehearsals.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { OrganizationsModule } from './organizations/organizations.module';
     RepertoireSectionsModule,
     EventsModule,
     ConcertsModule,
+    RehearsalsModule,
+    LocationsModule,
     MusicMetadataModule,
     PublicMetadataModule,
     OrganizationsModule,
