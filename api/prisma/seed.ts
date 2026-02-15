@@ -1,86 +1,93 @@
 import { PrismaClient, Role } from '@prisma/client';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 const prisma = new PrismaClient();
 
-// Hardcoded SUPERADMIN email
-const SUPERADMIN_EMAIL = 'jcjg0001@ce.pucmm.edu.do';
+interface SeedOrganization {
+  name: string;
+  slug: string;
+  domain?: string;
+  description?: string;
+  logoInitial?: string;
+  colorPrimary: string;
+  colorSecondary: string;
+  colorAccent: string;
+  allowedEmailDomains: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  locale?: string;
+}
+
+interface SeedAuthProvider {
+  enabled: boolean;
+  isPrimary: boolean;
+  displayName: string;
+  config?: Record<string, string | number | boolean>;
+}
+
+interface SeedSection {
+  key: string;
+  title: string;
+  subtitle?: string;
+  iconName?: string;
+  gradientFrom?: string;
+  gradientVia?: string;
+  gradientTo?: string;
+  iconGradientFrom?: string;
+  iconGradientTo?: string;
+}
+
+interface SeedData {
+  superadminEmail: string;
+  organization: SeedOrganization;
+  authProviders: {
+    azureAd: SeedAuthProvider;
+    google: SeedAuthProvider;
+    emailPassword: SeedAuthProvider;
+  };
+  repertoireSections: SeedSection[];
+}
+
+function loadSeedData(): SeedData {
+  const orgSlug = process.env.SEED_ORG || 'pucmm-band';
+  const seedPath = join(__dirname, 'seeds', `${orgSlug}.json`);
+
+  if (!existsSync(seedPath)) {
+    console.error(`Seed file not found: ${seedPath}`);
+    console.error(
+      `Available seeds: check api/prisma/seeds/ directory. Use SEED_ORG=<slug> to select one.`,
+    );
+    process.exit(1);
+  }
+
+  const raw = readFileSync(seedPath, 'utf-8');
+  console.log(`Loading seed data from: ${orgSlug}.json`);
+  return JSON.parse(raw) as SeedData;
+}
 
 async function main() {
+  const seedData = loadSeedData();
+
   console.log('Seeding database...');
 
   // Upsert SUPERADMIN user
   const superadmin = await prisma.user.upsert({
-    where: { email: SUPERADMIN_EMAIL },
+    where: { email: seedData.superadminEmail },
     update: { role: Role.SUPERADMIN },
     create: {
-      email: SUPERADMIN_EMAIL,
+      email: seedData.superadminEmail,
       name: 'Super Admin',
       role: Role.SUPERADMIN,
     },
   });
 
-  console.log(`SUPERADMIN user created/updated: ${superadmin.email} (${superadmin.role})`);
+  console.log(
+    `SUPERADMIN user created/updated: ${superadmin.email} (${superadmin.role})`,
+  );
 
-  // Seed default repertoire sections
-  const defaultSections = [
-    {
-      key: 'repertorio',
-      title: 'Repertorio Activo',
-      subtitle: 'Canciones listas y en ensayo',
-      iconName: 'Library',
-      gradientFrom: 'brand-blue-primary/40',
-      gradientVia: 'indigo-600/20',
-      gradientTo: 'transparent',
-      iconGradientFrom: 'brand-blue-primary',
-      iconGradientTo: 'indigo-600',
-    },
-    {
-      key: 'sugerencias',
-      title: 'Sugerencias Pendientes',
-      subtitle: 'Canciones esperando aprobación',
-      iconName: 'Clock',
-      gradientFrom: 'amber-500/30',
-      gradientVia: 'orange-600/10',
-      gradientTo: 'transparent',
-      iconGradientFrom: 'amber-500',
-      iconGradientTo: 'orange-600',
-    },
-    {
-      key: 'archivadas',
-      title: 'Archivo',
-      subtitle: 'Canciones que ya no tocamos',
-      iconName: 'Archive',
-      gradientFrom: 'gray-600/30',
-      gradientVia: 'gray-700/10',
-      gradientTo: 'transparent',
-      iconGradientFrom: 'gray-500',
-      iconGradientTo: 'gray-700',
-    },
-    {
-      key: 'eventos',
-      title: 'Eventos',
-      subtitle: 'Gestiona los eventos y conciertos de la banda',
-      iconName: 'Calendar',
-      gradientFrom: 'brand-blue-primary/40',
-      gradientVia: 'indigo-600/20',
-      gradientTo: 'transparent',
-      iconGradientFrom: 'brand-blue-primary',
-      iconGradientTo: 'indigo-600',
-    },
-    {
-      key: 'conciertos',
-      title: 'Conciertos',
-      subtitle: 'Historial de presentaciones y próximos conciertos',
-      iconName: 'Users',
-      gradientFrom: 'purple-600/40',
-      gradientVia: 'pink-500/20',
-      gradientTo: 'transparent',
-      iconGradientFrom: 'purple-600',
-      iconGradientTo: 'pink-500',
-    },
-  ];
-
-  for (const section of defaultSections) {
+  // Seed repertoire sections
+  for (const section of seedData.repertoireSections) {
     await prisma.repertoireSection.upsert({
       where: { key: section.key },
       update: {},
@@ -90,55 +97,48 @@ async function main() {
 
   console.log('Default repertoire sections created/verified');
 
-  // Seed default organization
+  // Seed organization
+  const orgData = seedData.organization;
   const org = await prisma.organization.upsert({
-    where: { slug: 'pucmm-band' },
+    where: { slug: orgData.slug },
     update: {},
     create: {
-      name: 'Banda Universitaria PUCMM',
-      slug: 'pucmm-band',
-      domain: 'pucmm-band.cjoga.cloud',
-      description:
-        'Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM',
-      logoInitial: 'P',
-      colorPrimary: '#0033A0',
-      colorSecondary: '#FFD200',
-      colorAccent: '#D22630',
-      allowedEmailDomains: ['ce.pucmm.edu.do'],
-      superadminEmail: SUPERADMIN_EMAIL,
-      metaTitle: 'PUCMM Band App',
-      metaDescription:
-        'Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM',
-      locale: 'es',
-    },
-  });
-
-  // Seed Azure AD auth provider
-  await prisma.authProvider.upsert({
-    where: {
-      organizationId_provider: {
-        organizationId: org.id,
-        provider: 'azure_ad',
-      },
-    },
-    update: {},
-    create: {
-      organizationId: org.id,
-      provider: 'azure_ad',
-      enabled: true,
-      isPrimary: true,
-      displayName: 'Correo Estudiantil PUCMM',
-      config: {
-        tenantId: process.env.AZURE_AD_TENANT_ID || '',
-        clientId: process.env.AZURE_AD_CLIENT_ID || '',
-      },
+      ...orgData,
+      superadminEmail: seedData.superadminEmail,
     },
   });
 
   console.log(`Organization created/verified: ${org.name} (${org.slug})`);
 
-  // Optionally seed Google auth provider (if GOOGLE_CLIENT_ID is configured)
-  if (process.env.GOOGLE_CLIENT_ID) {
+  // Seed Azure AD auth provider (always, if enabled)
+  const azureAd = seedData.authProviders.azureAd;
+  if (azureAd.enabled) {
+    await prisma.authProvider.upsert({
+      where: {
+        organizationId_provider: {
+          organizationId: org.id,
+          provider: 'azure_ad',
+        },
+      },
+      update: {},
+      create: {
+        organizationId: org.id,
+        provider: 'azure_ad',
+        enabled: true,
+        isPrimary: azureAd.isPrimary,
+        displayName: azureAd.displayName,
+        config: {
+          tenantId: process.env.AZURE_AD_TENANT_ID || '',
+          clientId: process.env.AZURE_AD_CLIENT_ID || '',
+        },
+      },
+    });
+    console.log('Azure AD auth provider seeded');
+  }
+
+  // Seed Google auth provider (only if enabled AND env vars present)
+  const google = seedData.authProviders.google;
+  if (google.enabled && process.env.GOOGLE_CLIENT_ID) {
     await prisma.authProvider.upsert({
       where: {
         organizationId_provider: {
@@ -151,8 +151,8 @@ async function main() {
         organizationId: org.id,
         provider: 'google',
         enabled: true,
-        isPrimary: false,
-        displayName: 'Google',
+        isPrimary: google.isPrimary,
+        displayName: google.displayName,
         config: {
           clientId: process.env.GOOGLE_CLIENT_ID || '',
           clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
@@ -162,8 +162,12 @@ async function main() {
     console.log('Google auth provider seeded');
   }
 
-  // Optionally seed email/password auth provider
-  if (process.env.ENABLE_EMAIL_PASSWORD_AUTH === 'true') {
+  // Seed email/password auth provider (only if enabled AND env var set)
+  const emailPassword = seedData.authProviders.emailPassword;
+  if (
+    emailPassword.enabled ||
+    process.env.ENABLE_EMAIL_PASSWORD_AUTH === 'true'
+  ) {
     await prisma.authProvider.upsert({
       where: {
         organizationId_provider: {
@@ -176,9 +180,9 @@ async function main() {
         organizationId: org.id,
         provider: 'email_password',
         enabled: true,
-        isPrimary: false,
-        displayName: 'Correo y Contraseña',
-        config: { requireEmailVerification: false },
+        isPrimary: emailPassword.isPrimary,
+        displayName: emailPassword.displayName,
+        config: emailPassword.config || { requireEmailVerification: false },
       },
     });
     console.log('Email/password auth provider seeded');

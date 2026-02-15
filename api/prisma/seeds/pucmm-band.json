@@ -1,0 +1,94 @@
+{
+  "superadminEmail": "jcjg0001@ce.pucmm.edu.do",
+  "organization": {
+    "name": "Banda Universitaria PUCMM",
+    "slug": "pucmm-band",
+    "domain": "pucmm-band.cjoga.cloud",
+    "description": "Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM",
+    "logoInitial": "P",
+    "colorPrimary": "#0033A0",
+    "colorSecondary": "#FFD200",
+    "colorAccent": "#D22630",
+    "allowedEmailDomains": ["ce.pucmm.edu.do"],
+    "metaTitle": "PUCMM Band App",
+    "metaDescription": "Sistema de Gestión de Repertorio para la Banda Universitaria PUCMM",
+    "locale": "es"
+  },
+  "authProviders": {
+    "azureAd": {
+      "enabled": true,
+      "isPrimary": true,
+      "displayName": "Correo Estudiantil PUCMM"
+    },
+    "google": {
+      "enabled": true,
+      "isPrimary": false,
+      "displayName": "Google"
+    },
+    "emailPassword": {
+      "enabled": false,
+      "isPrimary": false,
+      "displayName": "Correo y Contraseña",
+      "config": {
+        "requireEmailVerification": false
+      }
+    }
+  },
+  "repertoireSections": [
+    {
+      "key": "repertorio",
+      "title": "Repertorio Activo",
+      "subtitle": "Canciones listas y en ensayo",
+      "iconName": "Library",
+      "gradientFrom": "brand-blue-primary/40",
+      "gradientVia": "indigo-600/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "brand-blue-primary",
+      "iconGradientTo": "indigo-600"
+    },
+    {
+      "key": "sugerencias",
+      "title": "Sugerencias Pendientes",
+      "subtitle": "Canciones esperando aprobación",
+      "iconName": "Clock",
+      "gradientFrom": "amber-500/30",
+      "gradientVia": "orange-600/10",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "amber-500",
+      "iconGradientTo": "orange-600"
+    },
+    {
+      "key": "archivadas",
+      "title": "Archivo",
+      "subtitle": "Canciones que ya no tocamos",
+      "iconName": "Archive",
+      "gradientFrom": "gray-600/30",
+      "gradientVia": "gray-700/10",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "gray-500",
+      "iconGradientTo": "gray-700"
+    },
+    {
+      "key": "eventos",
+      "title": "Eventos",
+      "subtitle": "Gestiona los eventos y conciertos de la banda",
+      "iconName": "Calendar",
+      "gradientFrom": "brand-blue-primary/40",
+      "gradientVia": "indigo-600/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "brand-blue-primary",
+      "iconGradientTo": "indigo-600"
+    },
+    {
+      "key": "conciertos",
+      "title": "Conciertos",
+      "subtitle": "Historial de presentaciones y próximos conciertos",
+      "iconName": "Users",
+      "gradientFrom": "purple-600/40",
+      "gradientVia": "pink-500/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "purple-600",
+      "iconGradientTo": "pink-500"
+    }
+  ]
+}

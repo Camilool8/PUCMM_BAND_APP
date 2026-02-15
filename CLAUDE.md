@@ -434,16 +434,25 @@ className={`bg-linear-to-br from-${gradientFrom} to-${gradientTo}`}
 
 ## Seed Data
 
-The `prisma/seed.ts` file creates:
-1. SUPERADMIN user (`jcjg0001@ce.pucmm.edu.do`)
-2. Default repertoire sections:
-   - `repertorio`: "Repertorio Activo" (Library icon, blue gradient)
-   - `sugerencias`: "Sugerencias Pendientes" (Clock icon, amber gradient)
-   - `archivadas`: "Archivo" (Archive icon, gray gradient)
-   - `eventos`: "Eventos" (Calendar icon, blue gradient)
-   - `conciertos`: "Conciertos" (Users icon, purple/pink gradient)
+Seed data is organized by organization in `prisma/seeds/<org-slug>.json`. The `SEED_ORG` env var selects which file to use (default: `pucmm-band`).
 
-Run with: `npx prisma db seed`
+```
+prisma/seeds/
+├── pucmm-band.json    # PUCMM Band organization data
+└── _template.json     # Template for new organizations
+```
+
+Each JSON contains: superadmin email, organization branding, auth provider config, and repertoire section labels. Auth secrets (tenant IDs, client IDs) still come from env vars.
+
+```bash
+npx prisma db seed                      # Uses pucmm-band by default
+SEED_ORG=my-org npx prisma db seed      # Uses prisma/seeds/my-org.json
+```
+
+To deploy a new organization:
+1. Copy `_template.json` to `<your-slug>.json`
+2. Customize the values
+3. Run `SEED_ORG=<your-slug> npx prisma db seed`
 
 ## Events & Concerts Architecture
 

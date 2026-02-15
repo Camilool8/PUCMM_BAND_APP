@@ -1,0 +1,94 @@
+{
+  "superadminEmail": "admin@example.edu",
+  "organization": {
+    "name": "My Band",
+    "slug": "my-band",
+    "domain": "my-band.example.com",
+    "description": "Repertoire management system",
+    "logoInitial": "M",
+    "colorPrimary": "#0033A0",
+    "colorSecondary": "#FFD200",
+    "colorAccent": "#D22630",
+    "allowedEmailDomains": ["example.edu"],
+    "metaTitle": "My Band App",
+    "metaDescription": "Repertoire management system for My Band",
+    "locale": "es"
+  },
+  "authProviders": {
+    "azureAd": {
+      "enabled": true,
+      "isPrimary": true,
+      "displayName": "Institutional Email"
+    },
+    "google": {
+      "enabled": false,
+      "isPrimary": false,
+      "displayName": "Google"
+    },
+    "emailPassword": {
+      "enabled": false,
+      "isPrimary": false,
+      "displayName": "Email & Password",
+      "config": {
+        "requireEmailVerification": false
+      }
+    }
+  },
+  "repertoireSections": [
+    {
+      "key": "repertorio",
+      "title": "Active Repertoire",
+      "subtitle": "Songs ready and in rehearsal",
+      "iconName": "Library",
+      "gradientFrom": "brand-blue-primary/40",
+      "gradientVia": "indigo-600/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "brand-blue-primary",
+      "iconGradientTo": "indigo-600"
+    },
+    {
+      "key": "sugerencias",
+      "title": "Pending Suggestions",
+      "subtitle": "Songs awaiting approval",
+      "iconName": "Clock",
+      "gradientFrom": "amber-500/30",
+      "gradientVia": "orange-600/10",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "amber-500",
+      "iconGradientTo": "orange-600"
+    },
+    {
+      "key": "archivadas",
+      "title": "Archive",
+      "subtitle": "Songs no longer in rotation",
+      "iconName": "Archive",
+      "gradientFrom": "gray-600/30",
+      "gradientVia": "gray-700/10",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "gray-500",
+      "iconGradientTo": "gray-700"
+    },
+    {
+      "key": "eventos",
+      "title": "Events",
+      "subtitle": "Manage band events and concerts",
+      "iconName": "Calendar",
+      "gradientFrom": "brand-blue-primary/40",
+      "gradientVia": "indigo-600/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "brand-blue-primary",
+      "iconGradientTo": "indigo-600"
+    },
+    {
+      "key": "conciertos",
+      "title": "Concerts",
+      "subtitle": "Performance history and upcoming shows",
+      "iconName": "Users",
+      "gradientFrom": "purple-600/40",
+      "gradientVia": "pink-500/20",
+      "gradientTo": "transparent",
+      "iconGradientFrom": "purple-600",
+      "iconGradientTo": "pink-500"
+    }
+  ]
+}

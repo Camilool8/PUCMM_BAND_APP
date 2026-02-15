@@ -62,58 +62,60 @@ The `db/init-db.sh` script also creates a `platform_admin` database automaticall
 Then start the database, run migrations, and seed:
 ```bash
 docker-compose -f db/docker-compose.yml up -d
-cd api && npx prisma migrate dev && npx prisma db seed
+cd api && npx prisma migrate dev && SEED_ORG=my-org npx prisma db seed
 ```
 
-## Step 3: Seed Data (`api/prisma/seed.ts`)
+## Step 3: Seed Data (`api/prisma/seeds/`)
 
-The seed file creates the organization record, superadmin user, default repertoire sections, and auth providers. Customize these values **before** running the seed.
+Seed data is organized by organization in JSON files under `api/prisma/seeds/`. The `SEED_ORG` env var selects which file to use (default: `pucmm-band`).
 
-### Organization Record
+```
+prisma/seeds/
+├── pucmm-band.json    # PUCMM Band (default)
+└── _template.json     # Template for new organizations
+```
 
-Stored in the `organizations` table:
+### Creating a New Organization Seed
 
-| Field | Example | Description |
-|-------|---------|-------------|
-| `name` | `Banda Universitaria PUCMM` | Display name shown in UI |
-| `slug` | `pucmm-band` | URL-safe identifier (must be unique) |
-| `domain` | `pucmm-band.cjoga.cloud` | Production domain |
-| `description` | `Sistema de Gestión de Repertorio...` | Organization description |
-| `logoInitial` | `P` | Single character for avatar fallback |
-| `colorPrimary` | `#0033A0` | Primary brand color (hex) |
-| `colorSecondary` | `#FFD200` | Secondary brand color (hex) |
-| `colorAccent` | `#D22630` | Accent brand color (hex) |
-| `allowedEmailDomains` | `["ce.pucmm.edu.do"]` | Email domains allowed to log in |
-| `superadminEmail` | `jcjg0001@ce.pucmm.edu.do` | Initial SUPERADMIN user email |
-| `metaTitle` | `PUCMM Band App` | SEO page title |
-| `metaDescription` | `Sistema de Gestión...` | SEO meta description |
-| `locale` | `es` | Language/locale code |
+1. Copy `_template.json` to `<your-slug>.json`:
+   ```bash
+   cp api/prisma/seeds/_template.json api/prisma/seeds/my-org.json
+   ```
 
-### Auth Providers
+2. Edit the JSON file with your organization's values:
 
-Stored in the `auth_providers` table. Each provider is conditionally seeded:
+| Section | Field | Example | Description |
+|---------|-------|---------|-------------|
+| root | `superadminEmail` | `admin@myuni.edu` | Initial SUPERADMIN email (must match `allowedEmailDomains`) |
+| `organization` | `name` | `My University Band` | Display name shown in UI |
+| | `slug` | `my-org` | URL-safe identifier (must be unique) |
+| | `domain` | `my-org.example.com` | Production domain |
+| | `colorPrimary` | `#0033A0` | Primary brand color (hex) |
+| | `colorSecondary` | `#FFD200` | Secondary brand color (hex) |
+| | `colorAccent` | `#D22630` | Accent brand color (hex) |
+| | `allowedEmailDomains` | `["myuni.edu"]` | Email domains allowed to log in |
+| | `locale` | `es` | Language/locale code |
+| `authProviders` | `azureAd.enabled` | `true` | Enable Azure AD login |
+| | `google.enabled` | `false` | Enable Google login (also needs `GOOGLE_CLIENT_ID` env var) |
+| | `emailPassword.enabled` | `false` | Enable email/password (also needs `ENABLE_EMAIL_PASSWORD_AUTH` env var) |
+| `repertoireSections` | `[].title` | `Active Repertoire` | Localized section titles and labels |
 
-| Provider | Condition | Config Fields |
-|----------|-----------|---------------|
-| `azure_ad` | Always created | `tenantId`, `clientId` (read from env vars) |
-| `google` | Only if `GOOGLE_CLIENT_ID` env var is set | `clientId`, `clientSecret` |
-| `email_password` | Only if `ENABLE_EMAIL_PASSWORD_AUTH=true` | `requireEmailVerification` |
+3. Run the seed:
+   ```bash
+   SEED_ORG=my-org npx prisma db seed
+   ```
 
-### Repertoire Sections
+### Auth Provider Conditions
 
-Default UI labels (currently in Spanish). Customize for localization:
+Each auth provider requires **both** `enabled: true` in the JSON **and** the corresponding env vars:
 
-| Key | Title | Subtitle | Icon |
-|-----|-------|----------|------|
-| `repertorio` | Repertorio Activo | Canciones listas y en ensayo | Library |
-| `sugerencias` | Sugerencias Pendientes | Canciones esperando aprobación | Clock |
-| `archivadas` | Archivo | Canciones que ya no tocamos | Archive |
-| `eventos` | Eventos | Gestiona los eventos y conciertos | Calendar |
-| `conciertos` | Conciertos | Historial de presentaciones | Users |
+| Provider | JSON field | Required env vars |
+|----------|-----------|-------------------|
+| Azure AD | `authProviders.azureAd` | `AZURE_AD_TENANT_ID`, `AZURE_AD_CLIENT_ID` |
+| Google | `authProviders.google` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
+| Email/Password | `authProviders.emailPassword` | `ENABLE_EMAIL_PASSWORD_AUTH=true` |
 
-### Superadmin User
-
-The `SUPERADMIN_EMAIL` constant at the top of `seed.ts` determines the initial admin account. This email must belong to one of the `allowedEmailDomains`.
+Auth secrets (tenant IDs, client IDs, secrets) are **never** stored in the JSON — they come exclusively from environment variables.
 
 ## Step 4: API Environment Variables
 
