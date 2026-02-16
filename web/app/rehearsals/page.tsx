@@ -189,7 +189,7 @@ export default function RehearsalsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Dynamic Hero Header */}
-      <header className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
+      <header data-tour="rehearsals-header" className="relative -mx-4 md:-mx-8 -mt-4 md:-mt-8 px-4 md:px-8 pt-4 md:pt-8 pb-6 overflow-hidden">
         {bannerUrl && (
           <>
             <div
@@ -277,7 +277,7 @@ export default function RehearsalsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
+      <div data-tour="rehearsals-tabs" className="flex gap-1.5 md:gap-2 border-b border-surface-100 pb-2 -mt-2 overflow-x-auto scrollbar-hide">
         <button
           onClick={() => setActiveTab("todos")}
           className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-sm md:text-base font-medium transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
@@ -380,6 +380,7 @@ export default function RehearsalsPage() {
 
             {canManageEvents && (
               <button
+                data-tour="create-rehearsal-btn"
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium transition-all shrink-0"
               >
@@ -444,6 +445,7 @@ export default function RehearsalsPage() {
                 return (
                   <div
                     key={rehearsal.id}
+                    {...(idx === 0 ? { "data-tour": "rehearsal-card" } : {})}
                     onClick={() => handleRehearsalClick(rehearsal)}
                     className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl bg-surface-100/30 border border-surface-200/30 hover:border-white/10 transition-all cursor-pointer group animate-fade-in"
                     style={{ animationDelay: `${idx * 30}ms` }}

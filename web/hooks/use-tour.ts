@@ -136,8 +136,8 @@ export function useTour() {
   // Start welcome tour (only if not seen)
   const startWelcomeTour = useCallback(() => {
     if (!context.hasSeenWelcome) {
+      context.markWelcomeSeen(); // Mark FIRST to prevent race condition
       startAggregatedTour("welcome");
-      context.markWelcomeSeen();
     }
   }, [context.hasSeenWelcome, startAggregatedTour, context.markWelcomeSeen]);
 
@@ -206,6 +206,7 @@ export function useTour() {
     resetAllTours,
 
     // State
+    hydrated: context.hydrated,
     isRunning: context.isRunning,
     currentTourId: context.tourId,
     currentStep: context.currentStep,

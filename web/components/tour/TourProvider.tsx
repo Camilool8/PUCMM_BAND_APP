@@ -30,6 +30,8 @@ export type MiniTourId =
   | "events-setlist"
   | "concerts-browse"
   | "concerts-admin"
+  | "rehearsals-browse"
+  | "rehearsals-admin"
   | "profile-edit"
   | "users-admin";
 
@@ -60,6 +62,7 @@ interface TourContextType {
   closeAllModals: () => void;
 
   // Persistence
+  hydrated: boolean;
   hasSeenWelcome: boolean;
   completedTours: MiniTourId[];
   markTourCompleted: (tourId: MiniTourId) => void;
@@ -91,6 +94,7 @@ export function TourProvider({ children }: TourProviderProps) {
   const modalRegistryRef = useRef<Map<string, ModalControls>>(new Map());
 
   // Persistence state
+  const [hydrated, setHydrated] = useState(false);
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [completedTours, setCompletedTours] = useState<MiniTourId[]>([]);
   const [lastKnownRole, setLastKnownRole] = useState<UserRole | null>(null);
@@ -118,6 +122,7 @@ export function TourProvider({ children }: TourProviderProps) {
     } catch {
       // Ignore storage errors
     }
+    setHydrated(true);
   }, []);
 
   // Handle navigation completion
@@ -453,6 +458,7 @@ export function TourProvider({ children }: TourProviderProps) {
     openModal,
     closeModal,
     closeAllModals,
+    hydrated,
     hasSeenWelcome,
     completedTours,
     markTourCompleted,

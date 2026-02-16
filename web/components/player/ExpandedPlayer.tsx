@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -20,6 +21,7 @@ export default function ExpandedPlayer() {
     state,
     currentSong,
     currentItem,
+    dispatch,
     togglePlay,
     next,
     previous,
@@ -30,6 +32,10 @@ export default function ExpandedPlayer() {
     jumpTo,
     progress,
   } = usePlayer();
+
+  const handleSpotifyReady = useCallback(() => {
+    dispatch({ type: "SET_STATUS", payload: "playing" });
+  }, [dispatch]);
 
   if (!state.isExpanded || !state.isVisible || !currentSong) return null;
 
@@ -108,13 +114,13 @@ export default function ExpandedPlayer() {
           )}
         </div>
 
-        {/* Spotify embed when source is spotify */}
+        {/* Spotify embed */}
         {isSpotify && (
-          <div className="mb-6">
+          <div className="mb-6 max-w-md mx-auto">
             <SpotifyEngine
               spotifyTrackId={currentItem?.spotifyTrackId}
               isActive={true}
-              isExpanded={true}
+              onReady={handleSpotifyReady}
             />
           </div>
         )}
@@ -155,17 +161,19 @@ export default function ExpandedPlayer() {
           >
             <SkipBack size={28} className="fill-current" />
           </button>
-          <button
-            onClick={togglePlay}
-            className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform active:scale-95"
-            aria-label={isPlaying ? "Pausar" : "Reproducir"}
-          >
-            {isPlaying ? (
-              <Pause size={28} className="text-surface-0 fill-current" />
-            ) : (
-              <Play size={28} className="text-surface-0 fill-current ml-1" />
-            )}
-          </button>
+          {!isSpotify && (
+            <button
+              onClick={togglePlay}
+              className="w-16 h-16 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform active:scale-95"
+              aria-label={isPlaying ? "Pausar" : "Reproducir"}
+            >
+              {isPlaying ? (
+                <Pause size={28} className="text-surface-0 fill-current" />
+              ) : (
+                <Play size={28} className="text-surface-0 fill-current ml-1" />
+              )}
+            </button>
+          )}
           <button
             onClick={next}
             disabled={!hasNext}

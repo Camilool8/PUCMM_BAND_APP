@@ -56,16 +56,21 @@ cd web && npm run build     # Next.js build
 ### Backend (`/api`)
 - **NestJS 11** with modular architecture
 - **Prisma ORM** for PostgreSQL (schema at `prisma/schema.prisma`)
-- **Azure AD** authentication via `passport-azure-ad` (BearerStrategy)
+- **Multi-provider auth**: Azure AD, Google OAuth, email/password
+- **Unified auth guard** validates app JWT first, falls back to Azure AD
 - **class-validator** for DTO validation
-- Domain restricted to `@ce.pucmm.edu.do` emails
+- **bcrypt** for password hashing (12 rounds)
 
 Module structure:
 ```
 src/
-├── auth/                    # Azure AD strategy & guards
-│   ├── azure-ad.strategy.ts # JWT validation + user upsert
-│   ├── azure-ad.guard.ts    # Auth guard
+├── auth/                    # Multi-provider authentication
+│   ├── azure-ad.strategy.ts # Azure AD JWT validation + user upsert
+│   ├── azure-ad.guard.ts    # Azure AD guard
+│   ├── unified-auth.guard.ts # Validates app JWT first, falls back to Azure AD
+│   ├── auth.service.ts      # Email/password login, registration, Google OAuth
+│   ├── auth.controller.ts   # POST /auth/login, /auth/register, GET /auth/google
+│   ├── google.strategy.ts   # Google OAuth strategy
 │   ├── roles.guard.ts       # Role-based access control
 │   └── roles.decorator.ts   # @Roles() decorator
 ├── prisma/                  # PrismaService wrapper
@@ -85,7 +90,7 @@ src/
 │   └── dto/
 │       └── update-section.dto.ts
 ├── events/                  # Events CRUD (recurring event types)
-│   ├── events.controller.ts # GET/POST/PATCH/DELETE + song management
+│   ├── events.controller.ts # GET/POST/PATCH/DELETE + song management + blocks
 │   ├── events.service.ts
 │   └── dto/
 │       ├── create-event.dto.ts
@@ -96,6 +101,34 @@ src/
 │   └── dto/
 │       ├── create-concert.dto.ts
 │       └── update-concert.dto.ts
+├── rehearsals/              # Rehearsals CRUD + attendance
+│   ├── rehearsals.controller.ts # Full CRUD + songs + blocks + attendance + check-in
+│   ├── rehearsals.service.ts
+│   └── dto/
+│       ├── create-rehearsal.dto.ts
+│       ├── update-rehearsal.dto.ts
+│       ├── add-song.dto.ts
+│       ├── add-songs-bulk.dto.ts
+│       ├── reorder-setlist.dto.ts
+│       ├── create-block.dto.ts
+│       ├── update-block.dto.ts
+│       ├── check-in.dto.ts
+│       └── admin-attendance.dto.ts
+├── locations/               # GPS locations for attendance validation
+│   ├── locations.controller.ts # CRUD (SUPERADMIN only for writes)
+│   ├── locations.service.ts
+│   └── dto/
+│       ├── create-location.dto.ts
+│       └── update-location.dto.ts
+├── organizations/           # Multi-tenancy configuration
+│   ├── organizations.controller.ts # GET /config (public), PATCH / (SUPERADMIN)
+│   └── organizations.service.ts
+├── music-metadata/          # Music platform link resolver
+│   ├── music-metadata.controller.ts # POST /resolve, GET /search, POST /detect-platform
+│   ├── music-metadata.service.ts
+│   └── providers/           # Spotify, YouTube, Apple Music integrations
+├── public-metadata/         # Public SEO/OG tag endpoints (no auth)
+│   └── public-metadata.controller.ts # GET /public/metadata/{concert|event|rehearsal|song}/:id
 ├── app.module.ts            # Root module with ConfigModule
 └── main.ts                  # Bootstrap with CORS + static files
 ```
@@ -105,6 +138,8 @@ src/
 - **React 19** with TanStack Query v5 for server state
 - **MSAL React** for Azure AD authentication
 - **Tailwind CSS 4** with custom design tokens
+- **Leaflet / react-leaflet** for map-based location picking
+- **Framer Motion** for animations
 - **focus-trap-react** for accessible modals
 
 Key patterns:
@@ -113,77 +148,112 @@ app/                         # App Router pages
 ├── songs/page.tsx           # Repertoire with dynamic section headers
 ├── events/page.tsx          # Events with tabs per event + EventContent
 ├── concerts/page.tsx        # Concerts with upcoming/past/detail tabs
+├── rehearsals/              # Rehearsal pages
+│   ├── page.tsx             # Rehearsal listing (Todos, Próximos, Pasados)
+│   └── [id]/page.tsx        # Individual rehearsal detail
+├── guides/page.tsx          # Guides/documentation
 ├── page.tsx                 # Dashboard home
+├── api/og/                  # Dynamic OG image routes
+│   ├── concert/[id]/route.tsx
+│   ├── event/[id]/route.tsx
+│   ├── rehearsal/[id]/route.tsx
+│   └── song/[id]/route.tsx
 └── globals.css              # Design tokens
 components/
 ├── ui/
 │   ├── Modal.tsx            # Compound modal component
 │   └── FileDropzone.tsx     # Drag-and-drop upload
+├── player/                  # Music player components
+├── tour/                    # Tour guide components
 ├── SongRow.tsx              # Playlist-style row
 ├── StatusBadge.tsx          # Status indicator
 ├── UserProfileModal.tsx     # Profile editing
-├── SectionSettingsModal.tsx # Section customization
+├── SectionSettingsModal.tsx  # Section customization
 ├── AdminUsersModal.tsx      # User management
 ├── EventRow.tsx             # Event list item with icon
 ├── EventContent.tsx         # Event detail with setlist + concerts list
 ├── CreateEventModal.tsx     # Event create/edit form
 ├── ConcertContent.tsx       # Concert detail with setlist management
 ├── CreateConcertModal.tsx   # Concert create/edit form
+├── RehearsalContent.tsx     # Rehearsal detail (setlist, attendance)
+├── CreateRehearsalModal.tsx # Rehearsal create/edit with location picker
+├── AttendancePanel.tsx      # Attendance tracking with GPS check-in
+├── LocationsModal.tsx       # Location management with map picker
 └── ...
+contexts/
+└── music-player-context.tsx # Music player state management
 hooks/
 ├── use-songs.ts             # TanStack Query for songs
 ├── use-users.ts             # TanStack Query for users + useUpdateProfile
 ├── use-sections.ts          # TanStack Query for repertoire sections
 ├── use-events.ts            # TanStack Query for events + song management
 ├── use-concerts.ts          # TanStack Query for concerts + setlist
+├── use-rehearsals.ts        # TanStack Query for rehearsals + attendance + blocks
+├── use-locations.ts         # TanStack Query for locations CRUD
 ├── use-upload.ts            # File upload with progress
-└── use-auth.ts              # Auth state + permission flags
+├── use-auth.ts              # Auth state + permission flags
+├── use-org-config.ts        # Organization configuration
+├── use-music-metadata.ts    # Music metadata resolution
+├── use-msal-context.ts      # MSAL context hook
+└── use-tour.ts              # Tour/guide functionality
 lib/
 ├── api.ts                   # API client class with all methods
 ├── msal-config.ts           # Azure AD MSAL configuration
 └── utils.ts                 # cn() utility for classnames
 providers/
-└── index.tsx                # MSAL + QueryClient providers
+├── index.tsx                # MSAL + QueryClient providers
+└── OrgConfigProvider.tsx    # Organization configuration provider
 ```
 
 ### Data Models (Prisma)
-- **User**: Roles + profile data (avatarUrl, instruments[], phone, bio)
+- **Organization**: Multi-tenancy (name, slug, domain, branding colors, allowedEmailDomains, superadminEmail)
+- **AuthProvider**: Per-org auth config (azure_ad, google, email_password)
+- **User**: Roles + profile data (avatarUrl, instruments[], phone, bio) + multi-auth (passwordHash, googleId, authProvider, emailVerified)
 - **Song**: Status (PENDING, REHEARSING, READY, ARCHIVED), BPM, key, ISRC
 - **SongVersion**: Arrangements (Studio, Live, Remix)
 - **Event**: Recurring event types (e.g., "Navidad", "Graduación")
+- **EventBlock**: Non-song setlist items for events (INTERLUDE, INTRODUCTION, BREAK, TRANSITION, CUSTOM)
 - **Concert**: Specific performance dates within an Event
-- **Asset**: File attachments (scores, videos, audio) linked to songs/concerts
+- **ConcertBlock**: Non-song setlist items for concerts
+- **Rehearsal**: Scheduled rehearsals with optional event link and GPS location
+- **RehearsalSong**: Junction table for rehearsal-song with ordering
+- **RehearsalBlock**: Non-song setlist items for rehearsals
+- **RehearsalAttendance**: Attendance tracking (PRESENT, ABSENT, LATE, EXCUSED) with GPS coords
+- **Location**: GPS coordinates (latitude, longitude) + radiusMeters for check-in validation
+- **Asset**: File attachments (scores, videos, audio) linked to songs/concerts/rehearsals
 - **Tag**: Genre/category labels
 - **AuditLog**: Activity tracking
 - **RepertoireSection**: Customizable UI headers (title, subtitle, iconName, bannerUrl, gradients)
 
 ### Authentication Flow
-1. Frontend: MSAL acquires token from Azure AD
-2. `useAuth()` hook manages auth state and token
-3. `api.ts` client attaches `Authorization: Bearer {token}`
-4. Backend: `AzureAdGuard` validates token with passport-azure-ad
-5. Domain validation ensures `@ce.pucmm.edu.do` only
-6. User is upserted in DB on first login
+1. **Azure AD**: Frontend MSAL acquires token → backend validates via passport-azure-ad
+2. **Google OAuth**: Frontend redirects to `/auth/google` → backend handles callback, issues app JWT
+3. **Email/Password**: Frontend posts to `/auth/login` or `/auth/register` → backend validates, issues app JWT
+4. **Unified guard**: `UnifiedAuthGuard` validates app JWT first (fast), falls back to Azure AD
+5. Domain validation ensures only allowed email domains (configured per organization)
+6. User is upserted in DB on first login, accounts linked by email across providers
 
 ### Permission System
 ```typescript
+// Roles: SUPERADMIN, MEMBER, STUDENT_GUEST
 // Frontend (use-auth.ts)
 const {
-  canManageUsers,    // SUPERADMIN only
-  canManageSongs,    // SUPERADMIN or SECTION_LEADER
-  canManageEvents,   // SUPERADMIN or SECTION_LEADER - events/concerts CRUD
-  canSuggestSongs,   // SUPERADMIN, SECTION_LEADER, or MEMBER
-  canEditProfile,    // SUPERADMIN, SECTION_LEADER, or MEMBER (not ALUMNI_GUEST)
-  isAdmin            // SUPERADMIN or SECTION_LEADER
+  isAdmin,             // SUPERADMIN only
+  canManageUsers,      // SUPERADMIN only
+  canManageSongs,      // SUPERADMIN only
+  canEditSongs,        // SUPERADMIN or MEMBER
+  canManageEvents,     // SUPERADMIN only
+  canSuggestSongs,     // SUPERADMIN or MEMBER
+  canEditProfile,      // SUPERADMIN or MEMBER (not STUDENT_GUEST)
+  canManageRehearsals, // SUPERADMIN only
 } = useAuth();
 
 // Backend (roles.guard.ts)
-@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+@Roles(Role.SUPERADMIN)
 @Patch(':key')
 updateSection() { ... }
 
-// Concerts use the same roles
-@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)
+@Roles(Role.SUPERADMIN)
 @Post()
 createConcert() { ... }
 ```
@@ -300,8 +370,11 @@ const { data: events } = useEvents();
 const { data: event } = useEvent(eventId);  // With full relations
 const { data: concerts } = useConcerts();
 const { data: concert } = useConcert(concertId);  // With songs
+const { data: rehearsals } = useRehearsals();
+const { data: rehearsal } = useRehearsal(rehearsalId);  // With songs + attendance
+const { data: locations } = useLocations();
 
-// Mutations
+// Song mutations
 const createSong = useCreateSong();
 const updateProfile = useUpdateProfile();
 const updateSection = useUpdateSection();
@@ -321,6 +394,21 @@ const createConcert = useCreateConcert();
 const copySongs = useCopyEventSongsToConcert();
 await createConcert.mutateAsync({ eventId, date: new Date().toISOString(), location: "Auditorio" });
 await copySongs.mutateAsync(concertId);  // Copy all songs from parent event
+
+// Rehearsal mutations
+const createRehearsal = useCreateRehearsal();
+const addSongToRehearsal = useAddSongToRehearsal();
+const checkIn = useCheckIn();
+const markAttendance = useAdminMarkAttendance();
+const addBlock = useAddBlockToRehearsal();
+const reorderSetlist = useReorderRehearsalSetlist();
+await createRehearsal.mutateAsync({ date: new Date().toISOString(), locationId, eventId });
+await checkIn.mutateAsync({ rehearsalId, latitude: 18.5, longitude: -69.9 });
+await markAttendance.mutateAsync({ rehearsalId, userId, status: "PRESENT" });
+
+// Location mutations
+const createLocation = useCreateLocation();
+await createLocation.mutateAsync({ name: "Auditorio", latitude: 18.5, longitude: -69.9, radiusMeters: 200 });
 ```
 
 ### API Client
@@ -336,6 +424,14 @@ const sections = await api.getSections();
 const response = await api.uploadImage(file, (progress) => {
   console.log(`${progress}% uploaded`);
 });
+
+// Music metadata
+const metadata = await api.resolveMusicLink("https://open.spotify.com/track/...");
+const results = await api.searchSongMetadata("Despacito", "Luis Fonsi");
+
+// Auth (email/password)
+const { token } = await api.login("user@example.com", "password");
+await api.register("user@example.com", "password", "John Doe");
 ```
 
 ## File Upload Limits
@@ -414,7 +510,7 @@ API_INTERNAL_URL=                # Server-only: internal URL for SSR
 ```typescript
 // Backend
 @UseGuards(AzureAdGuard)  // Requires authentication
-@Roles(Role.SUPERADMIN, Role.SECTION_LEADER)  // Requires specific roles
+@Roles(Role.SUPERADMIN)   // Requires specific roles
 @Patch(':id')
 update(@Request() req) {
   const user = req.user.dbUser;  // Access current user
@@ -454,31 +550,48 @@ To deploy a new organization:
 2. Customize the values
 3. Run `SEED_ORG=<your-slug> npx prisma db seed`
 
-## Events & Concerts Architecture
+## Events, Concerts & Rehearsals Architecture
 
 ### Events
 - Recurring event types (e.g., "Navidad", "Graduación", "Extracurricular")
-- Have their own setlist (songs planned for the event)
-- Contain multiple concerts (specific performance dates)
+- Have their own setlist (songs planned for the event) + blocks (interludes, breaks)
+- Contain multiple concerts and rehearsals
 - Customizable appearance (iconName, bannerUrl, gradients)
 - Accessed via `/events` page with tabs per event
 
 ### Concerts
 - Specific performance dates within an Event
-- Have their own setlist (can differ from event's planned songs)
+- Have their own setlist (can differ from event's planned songs) + blocks
 - Can copy songs from parent event with one click
 - Support location, notes, upcoming/past categorization
 - Accessed via `/concerts` page with tabs: Todos, Próximos, Pasados
 - Direct navigation from events: clicking a concert navigates to `/concerts?concert={id}`
 
+### Rehearsals
+- Scheduled practice sessions, optionally linked to an Event
+- Have their own setlist (songs + blocks) with drag-and-drop reordering
+- GPS-based attendance tracking with location validation
+- Attendance statuses: PRESENT, ABSENT, LATE, EXCUSED
+- Check-in validates user's GPS coordinates against location's radius
+- Admin can manually mark attendance
+- Can copy songs from parent event
+- Accessed via `/rehearsals` page with tabs: Todos, Próximos, Pasados
+
 ### Data Flow
 ```
 Event (Navidad 2024)
 ├── Planned Songs [songA, songB, songC]
+├── Blocks [Introducción, Interludio]
 ├── Concert (Dec 15, 2024 @ Auditorio)
 │   └── Actual Setlist [songA, songC]  ← Can copy from event or customize
-└── Concert (Dec 22, 2024 @ Teatro)
-    └── Actual Setlist [songA, songB, songD]
+├── Concert (Dec 22, 2024 @ Teatro)
+│   └── Actual Setlist [songA, songB, songD]
+├── Rehearsal (Dec 10, 2024 @ Sala de Ensayo)
+│   ├── Setlist [songA, songB, Interludio, songC]
+│   └── Attendance [user1: PRESENT, user2: LATE, user3: ABSENT]
+└── Rehearsal (Dec 12, 2024 @ Sala de Ensayo)
+    ├── Setlist [songA, songC]
+    └── Attendance [user1: PRESENT, user2: PRESENT]
 ```
 
 ### Backend Transform Pattern
@@ -492,4 +605,32 @@ private transformConcert(concert: any) {
     _count: _count ? { songs: _count.songsPlayed } : undefined,
   };
 }
+```
+
+## Locations & GPS Attendance
+
+Locations store GPS coordinates used for rehearsal check-in validation:
+```typescript
+// Location model
+{ name, address, latitude, longitude, radiusMeters (default: 200) }
+
+// Check-in validates distance between user's GPS and location
+POST /rehearsals/:id/check-in { latitude, longitude }
+// Returns error if user is outside the location's radius
+```
+
+## Music Metadata Resolution
+
+The music-metadata module resolves platform links to structured metadata:
+```typescript
+// Resolve a music link
+POST /music-metadata/resolve { url: "https://open.spotify.com/track/..." }
+// Returns: { title, artist, album, coverUrl, duration, bpm, key, genre, isrc }
+
+// Search by title + artist
+GET /music-metadata/search?title=Despacito&artist=Luis+Fonsi
+
+// Detect platform
+POST /music-metadata/detect-platform { url: "..." }
+// Returns: { platform: "spotify" | "youtube" | "apple_music" }
 ```

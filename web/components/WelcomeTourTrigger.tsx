@@ -19,6 +19,7 @@ export default function WelcomeTourTrigger() {
     hasSeenWelcome,
     pendingRoleUpgradeTour,
     isRunning,
+    hydrated,
   } = useTour();
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -29,7 +30,7 @@ export default function WelcomeTourTrigger() {
 
   // Trigger appropriate tour when ready
   useEffect(() => {
-    if (!hasMounted || !isAuthenticated || isLoading || !effectiveRole || isRunning) {
+    if (!hasMounted || !hydrated || !isAuthenticated || isLoading || !effectiveRole || isRunning) {
       return;
     }
 
@@ -52,6 +53,7 @@ export default function WelcomeTourTrigger() {
     return () => clearTimeout(timer);
   }, [
     hasMounted,
+    hydrated,
     isAuthenticated,
     isLoading,
     effectiveRole,

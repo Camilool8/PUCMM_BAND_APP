@@ -6,7 +6,6 @@ import { usePlayer } from "@/contexts/music-player-context";
 import MiniPlayer from "./MiniPlayer";
 import ExpandedPlayer from "./ExpandedPlayer";
 import YouTubeEngine from "./YouTubeEngine";
-import SpotifyEngine from "./SpotifyEngine";
 
 export default function MusicPlayer() {
   const { state, currentItem, dispatch } = usePlayer();
@@ -47,14 +46,6 @@ export default function MusicPlayer() {
           onTimeUpdate={handleTimeUpdate}
           onEnd={handleEnd}
           onError={handleError}
-        />
-      )}
-
-      {isSpotify && !state.isExpanded && (
-        <SpotifyEngine
-          spotifyTrackId={currentItem?.spotifyTrackId}
-          isActive={true}
-          isExpanded={false}
         />
       )}
 

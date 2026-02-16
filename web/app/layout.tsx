@@ -8,6 +8,7 @@ import BottomNav from "@/components/BottomNav";
 import AuthGuard from "@/components/AuthGuard";
 import DevViewToggle from "@/components/DevViewToggle";
 import WelcomeTourTrigger from "@/components/WelcomeTourTrigger";
+import WhatsNewModal from "@/components/WhatsNewModal";
 import HomeBackground from "@/components/HomeBackground";
 import MainContent from "@/components/MainContent";
 import MusicPlayer from "@/components/player/MusicPlayer";
@@ -96,6 +97,9 @@ export default function RootLayout({
 
               {/* Welcome Tour Trigger */}
               <WelcomeTourTrigger />
+
+              {/* What's New modal for version updates */}
+              <WhatsNewModal />
 
               {/* Tour UI - overlay, spotlight, popover */}
               <TourUI />

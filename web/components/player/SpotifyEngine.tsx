@@ -3,26 +3,29 @@
 interface SpotifyEngineProps {
   spotifyTrackId: string | undefined;
   isActive: boolean;
-  isExpanded: boolean;
+  compact?: boolean;
+  onReady?: () => void;
 }
 
 export default function SpotifyEngine({
   spotifyTrackId,
   isActive,
-  isExpanded,
+  compact = false,
+  onReady,
 }: SpotifyEngineProps) {
   if (!spotifyTrackId || !isActive) return null;
 
   return (
-    <div className={isExpanded ? "w-full max-w-md mx-auto" : "sr-only"}>
+    <div className="w-full" key={spotifyTrackId}>
       <iframe
-        src={`https://open.spotify.com/embed/track/${spotifyTrackId}?theme=0`}
+        src={`https://open.spotify.com/embed/track/${spotifyTrackId}?utm_source=generator&theme=0`}
         width="100%"
-        height={isExpanded ? 80 : 0}
+        height={compact ? 80 : 152}
         allow="encrypted-media; autoplay; clipboard-write"
-        loading="lazy"
+        loading="eager"
         className="rounded-xl"
         title="Spotify Player"
+        onLoad={onReady}
       />
     </div>
   );

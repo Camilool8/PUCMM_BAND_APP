@@ -158,7 +158,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
 
     case "NEXT": {
       if (state.currentIndex >= state.queue.length - 1) {
-        return { ...state, status: "ended", currentTimeMs: 0 };
+        return { ...initialState };
       }
       return {
         ...state,

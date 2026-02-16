@@ -21,6 +21,9 @@ export type MiniTourId =
   // Concerts
   | "concerts-browse"
   | "concerts-admin"
+  // Rehearsals
+  | "rehearsals-browse"
+  | "rehearsals-admin"
   // Profile
   | "profile-edit"
   // Admin
@@ -35,7 +38,7 @@ export interface MiniTour {
   title: string;
   description: string;
   icon: string;
-  category: "navigation" | "songs" | "events" | "concerts" | "profile" | "admin";
+  category: "navigation" | "songs" | "events" | "concerts" | "rehearsals" | "profile" | "admin";
   minRole: UserRole;
   steps: TourStep[];
   targetPage?: string;
@@ -78,7 +81,7 @@ export function getNewCapabilities(previousRole: UserRole, currentRole: UserRole
 
   // MEMBER -> SUPERADMIN
   if (prevLevel < 2 && currLevel >= 2) {
-    newTours.push("songs-admin", "events-admin", "concerts-admin", "events-setlist", "users-admin");
+    newTours.push("songs-admin", "events-admin", "concerts-admin", "rehearsals-admin", "events-setlist", "users-admin");
   }
 
   return newTours;
@@ -757,6 +760,112 @@ export const miniTours: MiniTour[] = [
   },
 
   // ─────────────────────────────────────────────────────────────────────────
+  // REHEARSALS - BROWSE
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    id: "rehearsals-browse",
+    title: "Explorar Ensayos",
+    description: "Ve los ensayos programados y la asistencia",
+    icon: "ClipboardCheck",
+    category: "rehearsals",
+    minRole: "STUDENT_GUEST",
+    targetPage: "/rehearsals",
+    steps: [
+      {
+        id: "rehearsals-browse-1",
+        beforeShow: [navigate("/rehearsals")],
+        waitFor: "[data-tour='rehearsals-header']",
+        element: "[data-tour='rehearsals-header']",
+        popover: {
+          title: "Ensayos de la Banda",
+          description: "Aquí encontrarás todos los ensayos programados con sus setlists y asistencia.",
+          side: "bottom",
+        },
+      },
+      {
+        id: "rehearsals-browse-2",
+        element: "[data-tour='rehearsals-tabs']",
+        popover: {
+          title: "Filtrar Ensayos",
+          description: "'Todos' muestra todo, 'Próximos' los que vienen, 'Pasados' el historial.",
+          side: "bottom",
+        },
+      },
+      {
+        id: "rehearsals-browse-3",
+        element: "[data-tour='rehearsal-card']",
+        popover: {
+          title: "Tarjeta de Ensayo",
+          description: "Cada tarjeta muestra la fecha, hora, ubicación y evento asociado. Haz clic para ver los detalles.",
+          side: "bottom",
+        },
+      },
+      {
+        id: "rehearsals-browse-4",
+        popover: {
+          title: "Dentro de un Ensayo",
+          description: "Al abrir un ensayo verás el setlist con canciones y bloques, y el panel de asistencia.",
+        },
+      },
+      {
+        id: "rehearsals-browse-5",
+        popover: {
+          title: "Check-in con GPS",
+          description: "Cuando estés en la ubicación del ensayo, podrás hacer check-in. El sistema verifica tu GPS para confirmar tu asistencia automáticamente.",
+        },
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // REHEARSALS - ADMIN
+  // ─────────────────────────────────────────────────────────────────────────
+  {
+    id: "rehearsals-admin",
+    title: "Administrar Ensayos",
+    description: "Crea y gestiona ensayos",
+    icon: "ClipboardList",
+    category: "rehearsals",
+    minRole: "SUPERADMIN",
+    targetPage: "/rehearsals",
+    steps: [
+      {
+        id: "rehearsals-admin-1",
+        beforeShow: [navigate("/rehearsals")],
+        waitFor: "[data-tour='create-rehearsal-btn']",
+        element: "[data-tour='create-rehearsal-btn']",
+        popover: {
+          title: "Crear Ensayo",
+          description: "Haz clic aquí para crear un nuevo ensayo con fecha, hora, evento y ubicación.",
+          side: "left",
+        },
+        allowInteraction: true,
+      },
+      {
+        id: "rehearsals-admin-2",
+        popover: {
+          title: "Gestión del Setlist",
+          description: "Dentro de cada ensayo puedes agregar canciones, crear bloques (introducciones, intermedios), reordenar con drag & drop, y copiar del evento.",
+        },
+      },
+      {
+        id: "rehearsals-admin-3",
+        popover: {
+          title: "Control de Asistencia",
+          description: "Puedes marcar la asistencia de cada miembro manualmente: Presente, Ausente, Tarde o Excusado.",
+        },
+      },
+      {
+        id: "rehearsals-admin-4",
+        popover: {
+          title: "Reproductor Musical",
+          description: "Reproduce el setlist directamente desde el ensayo. YouTube funciona para todos. Para Spotify: la versión gratuita reproduce muestras de 30 segundos, con Premium escucharás las canciones completas.",
+        },
+      },
+    ],
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────
   // PROFILE (Member+)
   // ─────────────────────────────────────────────────────────────────────────
   {
@@ -878,7 +987,7 @@ export const aggregatedTours: AggregatedTour[] = [
       const tours: MiniTourId[] = ["nav-overview"];
 
       // Everyone gets browse tours
-      tours.push("songs-browse", "songs-details", "events-browse", "concerts-browse");
+      tours.push("songs-browse", "songs-details", "events-browse", "concerts-browse", "rehearsals-browse");
 
       // Member features (but NOT admin - admins use songs-admin instead)
       if (role === "MEMBER") {
@@ -887,7 +996,7 @@ export const aggregatedTours: AggregatedTour[] = [
 
       // Admin features - they don't suggest, they add directly
       if (role === "SUPERADMIN") {
-        tours.push("songs-admin", "events-admin", "events-setlist", "concerts-admin", "profile-edit", "users-admin");
+        tours.push("songs-admin", "events-admin", "events-setlist", "concerts-admin", "rehearsals-admin", "profile-edit", "users-admin");
       }
 
       return tours;
@@ -966,6 +1075,7 @@ export const CATEGORY_LABELS: Record<string, { label: string; icon: string }> = 
   songs: { label: "Repertorio", icon: "Music" },
   events: { label: "Eventos", icon: "Calendar" },
   concerts: { label: "Conciertos", icon: "Ticket" },
+  rehearsals: { label: "Ensayos", icon: "ClipboardCheck" },
   profile: { label: "Perfil", icon: "User" },
   admin: { label: "Administración", icon: "Shield" },
 };

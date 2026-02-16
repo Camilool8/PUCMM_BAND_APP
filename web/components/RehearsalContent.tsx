@@ -323,7 +323,7 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
       </div>
 
       {/* Setlist Section */}
-      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+      <div data-tour="rehearsal-setlist" className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
@@ -576,7 +576,9 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
       </div>
 
       {/* Attendance Panel */}
-      <AttendancePanel rehearsal={displayRehearsal} />
+      <div data-tour="rehearsal-attendance">
+        <AttendancePanel rehearsal={displayRehearsal} />
+      </div>
 
       {/* Media Gallery Section */}
       <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
