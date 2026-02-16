@@ -46,6 +46,7 @@ import SortableSongItem from "@/components/SortableSongItem";
 import SortableBlockItem, { BLOCK_LABELS } from "@/components/SortableBlockItem";
 import type { Event, Song, Concert, SetlistItem, BlockType } from "@/lib/api";
 import { formatDuration } from "@/lib/utils";
+import PlaySetlistButton from "@/components/player/PlaySetlistButton";
 
 interface EventContentProps {
   event: Event;
@@ -177,7 +178,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
   };
 
   const handleSongClick = (song: Song) => setSelectedSong(song);
-  const handleConcertClick = (concert: Concert) => router.push(`/concerts?concert=${concert.id}`);
+  const handleConcertClick = (concert: Concert) => router.push(`/concerts/${concert.id}`);
 
   const handleEditConcert = (concert: Concert) => {
     setEditConcert(concert);
@@ -196,7 +197,7 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
     setEditConcert(null);
   };
 
-  const handleRehearsalClick = (rehearsalId: string) => router.push(`/rehearsals?rehearsal=${rehearsalId}`);
+  const handleRehearsalClick = (rehearsalId: string) => router.push(`/rehearsals/${rehearsalId}`);
 
   const handleDeleteRehearsal = async (rehearsalId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -263,6 +264,11 @@ export default function EventContent({ event, onEdit }: EventContentProps) {
                 )}
               </div>
             )}
+            <PlaySetlistButton
+              setlistItems={setlistItems}
+              songs={eventSongs}
+              context={{ type: "event", id: event.id, name: displayEvent.name }}
+            />
           </div>
           {canManageEvents && !showAddSong && !showAddBlock && (
             <div className="flex items-center gap-1.5">

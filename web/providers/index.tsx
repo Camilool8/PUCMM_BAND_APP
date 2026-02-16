@@ -16,6 +16,7 @@ import { Toaster } from "sonner";
 import { OrgConfigProvider } from "./OrgConfigProvider";
 import { useOrgConfig } from "@/hooks/use-org-config";
 import { MsalContext } from "@/hooks/use-msal-context";
+import { MusicPlayerProvider } from "@/contexts/music-player-context";
 
 const toasterEl = (
   <Toaster
@@ -65,7 +66,9 @@ function InnerProviders({ children }: { children: ReactNode }) {
     return (
       <MsalWrapper azureProvider={azureProvider}>
         <QueryClientProvider client={queryClient}>
-          {children}
+          <MusicPlayerProvider>
+            {children}
+          </MusicPlayerProvider>
           {toasterEl}
         </QueryClientProvider>
       </MsalWrapper>
@@ -76,7 +79,9 @@ function InnerProviders({ children }: { children: ReactNode }) {
   return (
     <MsalContext.Provider value={null}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <MusicPlayerProvider>
+          {children}
+        </MusicPlayerProvider>
         {toasterEl}
       </QueryClientProvider>
     </MsalContext.Provider>

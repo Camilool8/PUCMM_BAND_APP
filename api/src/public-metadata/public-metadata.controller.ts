@@ -15,6 +15,11 @@ export class PublicMetadataController {
     return this.metadataService.getEventMetadata(id);
   }
 
+  @Get('rehearsal/:id')
+  getRehearsalMetadata(@Param('id') id: string) {
+    return this.metadataService.getRehearsalMetadata(id);
+  }
+
   @Get('song/:id')
   getSongMetadata(@Param('id') id: string) {
     return this.metadataService.getSongMetadata(id);

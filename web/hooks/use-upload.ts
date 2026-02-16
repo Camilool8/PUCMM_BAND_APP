@@ -133,6 +133,9 @@ export function useCreateAsset() {
       if (variables.concertId) {
         queryClient.invalidateQueries({ queryKey: ["assets", "concert", variables.concertId] });
       }
+      if (variables.rehearsalId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", "rehearsal", variables.rehearsalId] });
+      }
       toast.success("Archivo vinculado exitosamente");
     },
     onError: () => {
@@ -173,5 +176,13 @@ export function useConcertAssets(concertId: string) {
     queryKey: ["assets", "concert", concertId],
     queryFn: () => api.getAssetsByConcert(concertId),
     enabled: !!concertId,
+  });
+}
+
+export function useRehearsalAssets(rehearsalId: string) {
+  return useQuery({
+    queryKey: ["assets", "rehearsal", rehearsalId],
+    queryFn: () => api.getAssetsByRehearsal(rehearsalId),
+    enabled: !!rehearsalId,
   });
 }

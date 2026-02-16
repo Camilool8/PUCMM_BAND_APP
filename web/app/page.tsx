@@ -442,7 +442,7 @@ export default function Home() {
             {upcomingConcerts.map((concert) => (
               <Link
                 key={concert.id}
-                href={`/concerts?concert=${concert.id}`}
+                href={`/concerts/${concert.id}`}
                 className="flex items-center gap-3 p-3 bg-surface-50 rounded-xl border border-surface-100 hover:border-purple-500/30 transition-all group"
               >
                 <div className="w-12 h-12 rounded-xl bg-linear-to-br from-purple-500/30 to-pink-500/30 flex flex-col items-center justify-center shrink-0">

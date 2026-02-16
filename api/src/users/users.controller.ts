@@ -49,6 +49,13 @@ export class UsersController {
     return this.usersService.updateProfile(currentUser.id, updateProfileDto);
   }
 
+  // Get band members (SUPERADMIN + MEMBER) - for attendance panels
+  // Available to all authenticated users
+  @Get('members')
+  findMembers() {
+    return this.usersService.findMembers();
+  }
+
   // List all users (SUPERADMIN only)
   @Get()
   @UseGuards(RolesGuard)

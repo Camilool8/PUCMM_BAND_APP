@@ -52,6 +52,12 @@ const nextConfig: NextConfig = {
         destination: '/songs/:id',
         permanent: true,
       },
+      {
+        source: '/rehearsals',
+        has: [{ type: 'query', key: 'rehearsal', value: '(?<id>.+)' }],
+        destination: '/rehearsals/:id',
+        permanent: true,
+      },
     ];
   },
 };

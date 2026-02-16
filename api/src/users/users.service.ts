@@ -7,6 +7,23 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  async findMembers() {
+    return this.prisma.user.findMany({
+      where: {
+        role: { in: [Role.SUPERADMIN, Role.MEMBER] },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        instruments: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async findAll() {
     return this.prisma.user.findMany({
       orderBy: [

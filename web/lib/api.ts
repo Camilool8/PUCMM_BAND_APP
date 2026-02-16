@@ -159,6 +159,7 @@ export interface Asset {
   instrumentTag: string | null;
   songId: string | null;
   concertId: string | null;
+  rehearsalId: string | null;
   createdAt: string;
 }
 
@@ -169,6 +170,7 @@ export interface CreateAssetDto {
   instrumentTag?: string;
   songId?: string;
   concertId?: string;
+  rehearsalId?: string;
 }
 
 // ============================================================================
@@ -597,6 +599,10 @@ class ApiClient {
     return this.request<DbUser[]>("/users");
   }
 
+  async getMembers(): Promise<DbUser[]> {
+    return this.request<DbUser[]>("/users/members");
+  }
+
   async updateUserRole(id: string, role: Role): Promise<DbUser> {
     return this.request<DbUser>(`/users/${id}/role`, {
       method: "PATCH",
@@ -690,6 +696,10 @@ class ApiClient {
 
   async getAssetsByConcert(concertId: string): Promise<Asset[]> {
     return this.request<Asset[]>(`/uploads/concert/${concertId}/assets`);
+  }
+
+  async getAssetsByRehearsal(rehearsalId: string): Promise<Asset[]> {
+    return this.request<Asset[]>(`/uploads/rehearsal/${rehearsalId}/assets`);
   }
 
   async deleteAsset(id: string): Promise<void> {
@@ -1123,6 +1133,7 @@ class ApiClientProxy {
   checkDuplicate = (title: string, artist: string, isrc?: string) => this.client.checkDuplicate(title, artist, isrc);
   getMe = () => this.client.getMe();
   getUsers = () => this.client.getUsers();
+  getMembers = () => this.client.getMembers();
   updateUserRole = (id: string, role: Role) => this.client.updateUserRole(id, role);
   updateProfile = (data: UpdateProfileDto) => this.client.updateProfile(data);
   updateUserProfile = (id: string, data: UpdateProfileDto) => this.client.updateUserProfile(id, data);
@@ -1133,6 +1144,7 @@ class ApiClientProxy {
   createAsset = (data: CreateAssetDto) => this.client.createAsset(data);
   getAssetsBySong = (songId: string) => this.client.getAssetsBySong(songId);
   getAssetsByConcert = (concertId: string) => this.client.getAssetsByConcert(concertId);
+  getAssetsByRehearsal = (rehearsalId: string) => this.client.getAssetsByRehearsal(rehearsalId);
   deleteAsset = (id: string) => this.client.deleteAsset(id);
   getSections = () => this.client.getSections();
   getSection = (key: string) => this.client.getSection(key);

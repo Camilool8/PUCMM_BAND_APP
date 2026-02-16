@@ -253,12 +253,15 @@ model Asset {
   name          String?   // Display name for the asset
   instrumentTag String?   // e.g., "Alto Sax" (for scores)
 
-  // Can belong to a Song (scores, practice videos) OR a Concert (performance videos)
+  // Can belong to a Song, Concert, or Rehearsal
   songId        String?
   song          Song?     @relation(fields: [songId], references: [id], onDelete: Cascade)
 
   concertId     String?
   concert       Concert?  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+
+  rehearsalId   String?
+  rehearsal     Rehearsal? @relation(fields: [rehearsalId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime  @default(now())
 
@@ -316,6 +319,7 @@ model Rehearsal {
   rehearsalSongs  RehearsalSong[]
   rehearsalBlocks RehearsalBlock[]
   attendances     RehearsalAttendance[]
+  assets          Asset[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

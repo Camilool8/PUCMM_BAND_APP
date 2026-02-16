@@ -34,8 +34,14 @@ import {
   Layers,
   MapPin,
   Users,
+  Video,
+  Upload,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useRehearsalAssets, useCreateAsset, useDeleteAsset } from "@/hooks/use-upload";
+import MediaGallery from "@/components/MediaGallery";
+import { FileDropzone } from "@/components/ui/FileDropzone";
+import { env } from "@/lib/env";
 import {
   useRehearsal,
   useDeleteRehearsal,
@@ -53,9 +59,10 @@ import CreateRehearsalModal from "@/components/CreateRehearsalModal";
 import AttendancePanel from "@/components/AttendancePanel";
 import SortableSongItem from "@/components/SortableSongItem";
 import SortableBlockItem, { BLOCK_LABELS } from "@/components/SortableBlockItem";
-import type { Rehearsal, Song, SetlistItem, BlockType } from "@/lib/api";
+import type { Rehearsal, Song, SetlistItem, BlockType, AssetType } from "@/lib/api";
 import { formatDuration } from "@/lib/utils";
 import Link from "next/link";
+import PlaySetlistButton from "@/components/player/PlaySetlistButton";
 
 interface RehearsalContentProps {
   rehearsal: Rehearsal;
@@ -91,7 +98,7 @@ const BLOCK_TYPES: { value: BlockType; label: string }[] = [
 ];
 
 export default function RehearsalContent({ rehearsal, onBack }: RehearsalContentProps) {
-  const { canManageEvents } = useAuth();
+  const { canManageEvents, canUploadMedia, canDeleteAssets } = useAuth();
   const { data: fullRehearsal } = useRehearsal(rehearsal.id);
   const { data: allSongs } = useSongs();
   const deleteRehearsal = useDeleteRehearsal();
@@ -101,6 +108,11 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
   const copySongsFromEvent = useCopyEventSongsToRehearsal();
   const addBlockToRehearsal = useAddBlockToRehearsal();
   const removeBlockFromRehearsal = useRemoveBlockFromRehearsal();
+
+  // Media gallery hooks
+  const { data: assets = [] } = useRehearsalAssets(rehearsal.id);
+  const createAsset = useCreateAsset();
+  const deleteAsset = useDeleteAsset();
 
   const [showAddSong, setShowAddSong] = useState(false);
   const [showAddBlock, setShowAddBlock] = useState(false);
@@ -112,6 +124,7 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
   const [blockType, setBlockType] = useState<BlockType>("INTERLUDE");
   const [blockLabel, setBlockLabel] = useState("");
   const [blockDuration, setBlockDuration] = useState("");
+  const [showUploadMedia, setShowUploadMedia] = useState(false);
 
   const displayRehearsal = fullRehearsal || rehearsal;
   const setlistItems = displayRehearsal.setlistItems || [];
@@ -185,6 +198,21 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
     onBack();
   };
 
+  const handleMediaUploadComplete = async (response: { file: { url: string; originalName: string } }, type: "VIDEO" | "SCORE") => {
+    const fullUrl = `${env.apiUrl}${response.file.url}`;
+    await createAsset.mutateAsync({
+      type,
+      url: fullUrl,
+      name: response.file.originalName,
+      rehearsalId: rehearsal.id,
+    });
+    setShowUploadMedia(false);
+  };
+
+  const handleDeleteAsset = async (assetId: string) => {
+    await deleteAsset.mutateAsync(assetId);
+  };
+
   const handleSongClick = (song: Song) => {
     setSelectedSong(song);
   };
@@ -243,7 +271,7 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
           {/* Link to Event */}
           {displayRehearsal.event && (
             <Link
-              href="/events"
+              href={`/events/${displayRehearsal.event.id}`}
               className="flex items-center gap-2 text-gray-400 hover:text-emerald-400 transition-colors group"
             >
               <Calendar size={16} className="text-gray-500 group-hover:text-emerald-400 shrink-0" />
@@ -316,6 +344,11 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
                 )}
               </div>
             )}
+            <PlaySetlistButton
+              setlistItems={setlistItems}
+              songs={rehearsalSongs}
+              context={{ type: "rehearsal", id: rehearsal.id, name: "Ensayo" }}
+            />
           </div>
           {canManageEvents && !showAddSong && !showAddBlock && (
             <div className="flex items-center gap-1.5">
@@ -544,6 +577,70 @@ export default function RehearsalContent({ rehearsal, onBack }: RehearsalContent
 
       {/* Attendance Panel */}
       <AttendancePanel rehearsal={displayRehearsal} />
+
+      {/* Media Gallery Section */}
+      <div className="bg-surface-100/30 p-4 md:p-6 rounded-2xl border border-surface-200/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 className="flex items-center gap-2 text-white font-semibold text-base sm:text-lg">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+              <Video size={14} className="text-emerald-400 sm:w-4 sm:h-4" />
+            </div>
+            <span className="hidden xs:inline">Media del Ensayo</span>
+            <span className="xs:hidden">Media</span>
+            {assets.length > 0 && (
+              <span className="text-[10px] sm:text-xs text-gray-500 font-normal ml-1">
+                ({assets.length})
+              </span>
+            )}
+          </h3>
+          {canUploadMedia && !showUploadMedia && (
+            <button
+              onClick={() => setShowUploadMedia(true)}
+              className="flex items-center justify-center gap-1.5 text-sm text-emerald-400 hover:text-emerald-300 transition-colors px-3 py-2 rounded-lg hover:bg-emerald-500/10 w-full sm:w-auto"
+            >
+              <Upload size={16} />
+              <span>Subir media</span>
+            </button>
+          )}
+        </div>
+
+        {/* Upload Section */}
+        {showUploadMedia && (
+          <div className="mb-4 p-4 bg-surface-100/50 rounded-xl border border-surface-200/50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-gray-400">Subir video o imagen:</span>
+              <button
+                onClick={() => setShowUploadMedia(false)}
+                className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-3">
+              <FileDropzone
+                type="video"
+                label="Video"
+                description="MP4, WebM, MOV (max 1.5GB)"
+                onUploadComplete={(response) => handleMediaUploadComplete(response, "VIDEO")}
+              />
+              <FileDropzone
+                type="image"
+                label="Imagen"
+                description="JPG, PNG, WebP (max 15MB)"
+                onUploadComplete={(response) => handleMediaUploadComplete(response, "VIDEO")}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Gallery */}
+        <MediaGallery
+          assets={assets}
+          onDelete={handleDeleteAsset}
+          isDeleting={deleteAsset.isPending}
+          canDelete={canDeleteAssets}
+        />
+      </div>
 
       {/* Admin Actions */}
       {canManageEvents && (

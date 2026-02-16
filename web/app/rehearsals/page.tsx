@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useRehearsals, useRehearsal } from "@/hooks/use-rehearsals";
 import { useSection } from "@/hooks/use-sections";
 import { useAuth } from "@/hooks/use-auth";
@@ -65,7 +65,6 @@ const getColor = (colorName: string | null): string => {
 type TabFilter = "todos" | "proximos" | "pasados" | string;
 
 export default function RehearsalsPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<TabFilter>("todos");
@@ -79,14 +78,7 @@ export default function RehearsalsPage() {
   const { data: ensayosSection } = useSection("ensayos");
   const { canManageEvents } = useAuth();
 
-  // Handle URL query param for direct rehearsal navigation
-  useEffect(() => {
-    const rehearsalId = searchParams.get("rehearsal");
-    if (rehearsalId) {
-      setActiveTab(rehearsalId);
-      router.replace("/rehearsals", { scroll: false });
-    }
-  }, [searchParams, router]);
+  // URL query param ?rehearsal=id is handled by next.config.ts redirect to /rehearsals/[id]
 
   const selectedRehearsalId = useMemo(() => {
     if (activeTab === "todos" || activeTab === "proximos" || activeTab === "pasados") {
@@ -156,7 +148,7 @@ export default function RehearsalsPage() {
   }, [activeTab, allRehearsals, upcomingRehearsals, pastRehearsals, searchQuery]);
 
   const handleRehearsalClick = (rehearsal: Rehearsal) => {
-    setActiveTab(rehearsal.id);
+    router.push(`/rehearsals/${rehearsal.id}`);
   };
 
   const isRehearsalSelected = !!displayRehearsal;

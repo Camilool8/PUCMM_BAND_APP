@@ -235,10 +235,11 @@ export class UploadsController {
       instrumentTag?: string;
       songId?: string;
       concertId?: string;
+      rehearsalId?: string;
     },
   ) {
-    if (!body.songId && !body.concertId) {
-      throw new BadRequestException('Either songId or concertId must be provided');
+    if (!body.songId && !body.concertId && !body.rehearsalId) {
+      throw new BadRequestException('Either songId, concertId, or rehearsalId must be provided');
     }
 
     const asset = await this.uploadsService.createAsset({
@@ -248,6 +249,7 @@ export class UploadsController {
       instrumentTag: body.instrumentTag,
       songId: body.songId,
       concertId: body.concertId,
+      rehearsalId: body.rehearsalId,
     });
 
     return {
@@ -270,6 +272,14 @@ export class UploadsController {
   @Get('concert/:concertId/assets')
   async getAssetsByConcert(@Param('concertId') concertId: string) {
     return this.uploadsService.getAssetsByConcert(concertId);
+  }
+
+  // ============================================================================
+  // Get Assets by Rehearsal
+  // ============================================================================
+  @Get('rehearsal/:rehearsalId/assets')
+  async getAssetsByRehearsal(@Param('rehearsalId') rehearsalId: string) {
+    return this.uploadsService.getAssetsByRehearsal(rehearsalId);
   }
 
   // ============================================================================

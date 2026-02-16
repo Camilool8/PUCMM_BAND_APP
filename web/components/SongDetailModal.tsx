@@ -921,7 +921,7 @@ export default function SongDetailModal({ song, onClose }: SongDetailModalProps)
                         key={es.event.id}
                         onClick={() => {
                           handleClose();
-                          router.push(`/events?event=${es.event.id}`);
+                          router.push(`/events/${es.event.id}`);
                         }}
                         className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-200/50 hover:bg-white/10 border border-surface-200 transition-all group"
                       >

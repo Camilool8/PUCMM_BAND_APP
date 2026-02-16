@@ -20,6 +20,7 @@ export interface CreateAssetDto {
   instrumentTag?: string;
   songId?: string;
   concertId?: string;
+  rehearsalId?: string;
 }
 
 @Injectable()
@@ -69,6 +70,7 @@ export class UploadsService {
         instrumentTag: data.instrumentTag,
         songId: data.songId,
         concertId: data.concertId,
+        rehearsalId: data.rehearsalId,
       },
     });
   }
@@ -101,6 +103,13 @@ export class UploadsService {
   async getAssetsByConcert(concertId: string) {
     return this.prisma.asset.findMany({
       where: { concertId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getAssetsByRehearsal(rehearsalId: string) {
+    return this.prisma.asset.findMany({
+      where: { rehearsalId },
       orderBy: { createdAt: 'desc' },
     });
   }

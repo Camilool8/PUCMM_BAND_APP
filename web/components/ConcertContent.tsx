@@ -59,6 +59,7 @@ import type { Concert, Song, AssetType, SetlistItem, BlockType } from "@/lib/api
 import { env } from "@/lib/env";
 import { formatDuration } from "@/lib/utils";
 import Link from "next/link";
+import PlaySetlistButton from "@/components/player/PlaySetlistButton";
 
 interface ConcertContentProps {
   concert: Concert;
@@ -270,7 +271,7 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
           {/* Link to Event */}
           {displayConcert.event && (
             <Link
-              href={`/events`}
+              href={`/events/${displayConcert.event.id}`}
               className="flex items-center gap-2 text-gray-400 hover:text-brand-yellow transition-colors group"
             >
               <Calendar size={16} className="text-gray-500 group-hover:text-brand-yellow shrink-0" />
@@ -332,6 +333,11 @@ export default function ConcertContent({ concert, onBack }: ConcertContentProps)
                 )}
               </div>
             )}
+            <PlaySetlistButton
+              setlistItems={setlistItems}
+              songs={concertSongs}
+              context={{ type: "concert", id: concert.id, name: "Concierto" }}
+            />
           </div>
           {canManageEvents && !showAddSong && !showAddBlock && (
             <div className="flex items-center gap-1.5">

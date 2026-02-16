@@ -13,6 +13,14 @@ export function useUsers() {
   });
 }
 
+export function useMembers() {
+  return useQuery({
+    queryKey: ["users", "members"],
+    queryFn: () => api.getMembers(),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
 

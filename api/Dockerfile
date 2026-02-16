@@ -54,6 +54,9 @@ RUN ls -la dist/ && test -f dist/main.js || (echo "ERROR: main.js not found!" &&
 # Compile seed file separately (not in src/, so nest build doesn't include it)
 RUN npx tsc prisma/seed.ts --outDir dist/prisma --esModuleInterop --skipLibCheck --module commonjs --target ES2020
 
+# Copy seed data files alongside compiled seed.js (so __dirname/seeds/ resolves correctly)
+RUN cp -r prisma/seeds dist/prisma/seeds
+
 # -----------------------------------------------------------------------------
 # Stage 4: Production image
 # -----------------------------------------------------------------------------

@@ -17,6 +17,14 @@ export interface EventMetadata {
   iconName: string | null;
 }
 
+export interface RehearsalMetadata {
+  id: string;
+  date: string;
+  eventName: string | null;
+  locationName: string | null;
+  bannerUrl: string | null;
+}
+
 export interface SongMetadata {
   id: string;
   title: string;
@@ -80,6 +88,30 @@ export class PublicMetadataService {
       description: event.description,
       bannerUrl: event.bannerUrl,
       iconName: event.iconName,
+    };
+  }
+
+  async getRehearsalMetadata(id: string): Promise<RehearsalMetadata> {
+    const rehearsal = await this.prisma.rehearsal.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        date: true,
+        event: { select: { name: true, bannerUrl: true } },
+        location: { select: { name: true } },
+      },
+    });
+
+    if (!rehearsal) {
+      throw new NotFoundException('Rehearsal not found');
+    }
+
+    return {
+      id: rehearsal.id,
+      date: rehearsal.date.toISOString(),
+      eventName: rehearsal.event?.name || null,
+      locationName: rehearsal.location?.name || null,
+      bannerUrl: rehearsal.event?.bannerUrl || null,
     };
   }
 

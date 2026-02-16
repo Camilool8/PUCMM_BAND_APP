@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useConcerts, useConcert } from "@/hooks/use-concerts";
 import { useSection } from "@/hooks/use-sections";
 import { useAuth } from "@/hooks/use-auth";
@@ -58,7 +58,6 @@ const getColor = (colorName: string | null): string => {
 type TabFilter = "todos" | "proximos" | "pasados" | string;
 
 export default function ConcertsPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   // "todos", "proximos", "pasados", or a concert ID
@@ -71,15 +70,7 @@ export default function ConcertsPage() {
   const { data: conciertosSection } = useSection("conciertos");
   const { canManageEvents } = useAuth();
 
-  // Handle URL query param for direct concert navigation
-  useEffect(() => {
-    const concertId = searchParams.get("concert");
-    if (concertId) {
-      setActiveTab(concertId);
-      // Clear the URL param without navigation
-      router.replace("/concerts", { scroll: false });
-    }
-  }, [searchParams, router]);
+  // URL query param ?concert=id is handled by next.config.ts redirect to /concerts/[id]
 
   // Get selected concert from tab (if it's a concert ID)
   const selectedConcertId = useMemo(() => {

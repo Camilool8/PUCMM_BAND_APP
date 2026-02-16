@@ -9,6 +9,8 @@ import AuthGuard from "@/components/AuthGuard";
 import DevViewToggle from "@/components/DevViewToggle";
 import WelcomeTourTrigger from "@/components/WelcomeTourTrigger";
 import HomeBackground from "@/components/HomeBackground";
+import MainContent from "@/components/MainContent";
+import MusicPlayer from "@/components/player/MusicPlayer";
 import { TourProvider, TourUI } from "@/components/tour";
 import { Providers } from "@/providers";
 
@@ -80,13 +82,14 @@ export default function RootLayout({
 
               {/* Main Content */}
               <main className="flex-1 md:ml-64 flex flex-col relative overflow-hidden z-10">
-                <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 scrollbar-hide">
-                  <div className="animate-fade-in">{children}</div>
-                </div>
+                <MainContent>{children}</MainContent>
               </main>
 
               {/* Mobile Bottom Navigation */}
               <BottomNav />
+
+              {/* Floating Music Player */}
+              <MusicPlayer />
 
               {/* Dev Mode Toggle (only for SUPERADMIN in development) */}
               <DevViewToggle />

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useCheckIn, useAdminMarkAttendance, useRemoveAttendance } from "@/hooks/use-rehearsals";
-import { useUsers } from "@/hooks/use-users";
+import { useMembers } from "@/hooks/use-users";
 import type { Rehearsal, RehearsalAttendance } from "@/lib/api";
 
 interface AttendancePanelProps {
@@ -34,7 +34,7 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
   const checkIn = useCheckIn();
   const adminMark = useAdminMarkAttendance();
   const removeAttendance = useRemoveAttendance();
-  const { data: allUsers } = useUsers();
+  const { data: allUsers } = useMembers();
 
   const [geoError, setGeoError] = useState<string | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
