@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 @Injectable()
 export class UsersService {
@@ -96,6 +97,26 @@ export class UsersService {
         createdAt: true,
         updatedAt: true,
       },
+    });
+  }
+
+  async updatePreferences(id: string, dto: UpdatePreferencesDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { preferences: true },
+    });
+
+    const existing = (user?.preferences as Record<string, unknown>) || {};
+    const merged = { ...existing };
+
+    if (dto.seenAppVersion !== undefined) merged.seenAppVersion = dto.seenAppVersion;
+    if (dto.completedTours !== undefined) merged.completedTours = dto.completedTours;
+    if (dto.hasSeenWelcome !== undefined) merged.hasSeenWelcome = dto.hasSeenWelcome;
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { preferences: merged as Prisma.InputJsonValue },
+      select: { preferences: true },
     });
   }
 }

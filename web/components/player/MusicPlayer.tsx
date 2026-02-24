@@ -29,15 +29,12 @@ export default function MusicPlayer() {
     dispatch({ type: "NEXT" });
   }, [dispatch]);
 
-  if (!state.isVisible) return null;
-
   const isYouTube = currentItem?.source === "youtube";
-  const isSpotify = currentItem?.source === "spotify";
 
   return (
     <>
       {/* Audio engines */}
-      {isYouTube && currentItem?.videoId && (
+      {state.isVisible && isYouTube && currentItem?.videoId && (
         <YouTubeEngine
           videoId={currentItem.videoId}
           isPlaying={state.status === "playing"}
@@ -49,11 +46,16 @@ export default function MusicPlayer() {
         />
       )}
 
-      {/* Visual components */}
-      <AnimatePresence mode="wait">
-        {!state.isExpanded && <MiniPlayer key="mini" />}
-        {state.isExpanded && <ExpandedPlayer key="expanded" />}
+      {/* Mini player - renders in place, safe with AnimatePresence */}
+      <AnimatePresence>
+        {state.isVisible && !state.isExpanded && currentItem && (
+          <MiniPlayer key="mini" />
+        )}
       </AnimatePresence>
+
+      {/* Expanded player - manages its own portal + AnimatePresence internally
+          to avoid removeChild errors from portal/AnimatePresence conflicts */}
+      <ExpandedPlayer />
     </>
   );
 }

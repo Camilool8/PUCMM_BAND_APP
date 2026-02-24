@@ -48,7 +48,7 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
     setIsGettingLocation(true);
 
     if (!navigator.geolocation) {
-      setGeoError("Tu navegador no soporta geolocalización");
+      setGeoError("Tu navegador no soporta geolocalización. Intenta abrir esta página en Chrome o Safari.");
       setIsGettingLocation(false);
       return;
     }
@@ -58,7 +58,11 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
       try {
         const permStatus = await navigator.permissions.query({ name: "geolocation" });
         if (permStatus.state === "denied") {
-          setGeoError("El acceso a tu ubicación está bloqueado. Actívalo en los ajustes de tu navegador.");
+          setGeoError(
+            "El acceso a tu ubicación está bloqueado. " +
+            "Ve a los ajustes de tu navegador → Permisos del sitio → Ubicación, y permite el acceso. " +
+            "Luego recarga la página."
+          );
           setIsGettingLocation(false);
           return;
         }
@@ -67,59 +71,100 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
       }
     }
 
+    const submitPosition = async (position: GeolocationPosition) => {
+      try {
+        await checkIn.mutateAsync({
+          rehearsalId: rehearsal.id,
+          data: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          },
+        });
+        setGeoError(null);
+      } catch (err: any) {
+        if (err?.message?.includes("403")) {
+          setGeoError("Estás fuera del rango permitido para registrar asistencia.");
+        } else {
+          setGeoError("Error al registrar asistencia. Intenta de nuevo.");
+        }
+      }
+    };
+
     // Manual safety timeout in case the browser never calls either callback
     let resolved = false;
     const safetyTimer = setTimeout(() => {
       if (!resolved) {
         resolved = true;
         setIsGettingLocation(false);
-        setGeoError("No se pudo obtener tu ubicación. Verifica que el GPS esté activado y que hayas dado permiso de ubicación.");
+        setGeoError(
+          "No se pudo obtener tu ubicación a tiempo. Asegúrate de que: " +
+          "1) La ubicación/GPS esté activada en tu dispositivo, " +
+          "2) Hayas dado permiso de ubicación a este sitio. " +
+          "Luego intenta de nuevo."
+        );
       }
-    }, 15000);
+    }, 20000);
 
+    // Phase 1: Try with high accuracy (GPS hardware)
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         if (resolved) return;
         resolved = true;
         clearTimeout(safetyTimer);
         setIsGettingLocation(false);
-        try {
-          await checkIn.mutateAsync({
-            rehearsalId: rehearsal.id,
-            data: {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            },
-          });
-          setGeoError(null);
-        } catch (err: any) {
-          if (err?.message?.includes("403")) {
-            setGeoError("Estás fuera del rango permitido para registrar asistencia");
-          } else {
-            setGeoError("Error al registrar asistencia. Intenta de nuevo.");
-          }
-        }
+        await submitPosition(position);
       },
       (err) => {
         if (resolved) return;
-        resolved = true;
-        clearTimeout(safetyTimer);
-        setIsGettingLocation(false);
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            setGeoError("Debes permitir el acceso a tu ubicación para registrar asistencia");
-            break;
-          case err.POSITION_UNAVAILABLE:
-            setGeoError("No se pudo obtener tu ubicación. Verifica que el GPS esté activado.");
-            break;
-          case err.TIMEOUT:
-            setGeoError("Tiempo de espera agotado. Verifica tu GPS e intenta de nuevo.");
-            break;
-          default:
-            setGeoError("Error al obtener ubicación");
+
+        // PERMISSION_DENIED → no point retrying
+        if (err.code === err.PERMISSION_DENIED) {
+          resolved = true;
+          clearTimeout(safetyTimer);
+          setIsGettingLocation(false);
+          setGeoError(
+            "Debes permitir el acceso a tu ubicación. " +
+            "Si ya lo permitiste y sigue sin funcionar: " +
+            "1) Cierra y vuelve a abrir el navegador, " +
+            "2) Ve a Ajustes → Privacidad → Ubicación y verifica que esté activada."
+          );
+          return;
         }
+
+        // Phase 2: Fallback — try without high accuracy (network-based, faster)
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            if (resolved) return;
+            resolved = true;
+            clearTimeout(safetyTimer);
+            setIsGettingLocation(false);
+            await submitPosition(position);
+          },
+          (fallbackErr) => {
+            if (resolved) return;
+            resolved = true;
+            clearTimeout(safetyTimer);
+            setIsGettingLocation(false);
+            switch (fallbackErr.code) {
+              case fallbackErr.POSITION_UNAVAILABLE:
+                setGeoError(
+                  "No se pudo obtener tu ubicación. Asegúrate de que el GPS/ubicación " +
+                  "esté activado en los ajustes de tu dispositivo."
+                );
+                break;
+              case fallbackErr.TIMEOUT:
+                setGeoError(
+                  "Tiempo de espera agotado. Verifica que el GPS esté activado e intenta de nuevo."
+                );
+                break;
+              default:
+                setGeoError("Error al obtener ubicación. Intenta de nuevo.");
+            }
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   }, [checkIn, rehearsal.id]);
 
@@ -195,11 +240,21 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
               {geoError && (
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                   <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
-                  <p className="text-xs text-red-400">{geoError}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-red-400">{geoError}</p>
+                    <button
+                      onClick={handleCheckIn}
+                      disabled={isGettingLocation || checkIn.isPending}
+                      className="mt-2 text-xs text-red-300 underline underline-offset-2 hover:text-white transition-colors disabled:opacity-50"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
                 </div>
               )}
               <p className="text-[10px] text-gray-500 text-center">
-                Debes estar cerca de {rehearsal.location?.name || "la ubicación"} para registrar asistencia
+                Debes estar cerca de {rehearsal.location?.name || "la ubicación"} para registrar asistencia.
+                {" "}Usa Chrome o Safari para mejores resultados.
               </p>
             </div>
           )}
@@ -229,7 +284,16 @@ export default function AttendancePanel({ rehearsal }: AttendancePanelProps) {
           {geoError && (
             <div className="flex items-start gap-2 p-3 mt-2 rounded-xl bg-red-500/10 border border-red-500/20">
               <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-red-400">{geoError}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-red-400">{geoError}</p>
+                <button
+                  onClick={handleCheckIn}
+                  disabled={isGettingLocation || checkIn.isPending}
+                  className="mt-2 text-xs text-red-300 underline underline-offset-2 hover:text-white transition-colors disabled:opacity-50"
+                >
+                  Reintentar
+                </button>
+              </div>
             </div>
           )}
         </div>

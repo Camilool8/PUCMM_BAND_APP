@@ -63,6 +63,7 @@ model User {
   googleId       String?  @unique     // Google OAuth subject ID
   authProvider   String   @default("azure_ad") // "azure_ad" | "google" | "email_password"
   emailVerified  Boolean  @default(false)      // Auto-true for Azure AD & Google
+  preferences    Json?    // UI preferences: { seenAppVersion, completedTours, hasSeenWelcome }
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

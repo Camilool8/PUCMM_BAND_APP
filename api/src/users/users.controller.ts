@@ -16,6 +16,7 @@ import { Roles } from '../auth/roles.decorator';
 import { Role } from '@prisma/client';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdatePreferencesDto } from './dto/update-preferences.dto';
 
 const VALID_ROLES = Object.values(Role);
 
@@ -47,6 +48,15 @@ export class UsersController {
     }
 
     return this.usersService.updateProfile(currentUser.id, updateProfileDto);
+  }
+
+  // Update current user's UI preferences (all authenticated users)
+  @Patch('me/preferences')
+  async updateMyPreferences(
+    @Request() req,
+    @Body() dto: UpdatePreferencesDto,
+  ) {
+    return this.usersService.updatePreferences(req.user.dbUser.id, dto);
   }
 
   // Get band members (SUPERADMIN + MEMBER) - for attendance panels

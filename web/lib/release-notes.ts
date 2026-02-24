@@ -4,6 +4,8 @@ export interface ReleaseHighlight {
   icon: string;
   title: string;
   description: string;
+  /** Shown to MEMBER / STUDENT_GUEST instead of `description` */
+  descriptionNonAdmin?: string;
 }
 
 export interface ReleaseNote {
@@ -24,6 +26,8 @@ export const releaseNotes: ReleaseNote[] = [
         title: "Gestión de Ensayos",
         description:
           "Crea y gestiona ensayos con setlists, bloques y asistencia GPS. Controla quién asistió con check-in automático por ubicación.",
+        descriptionNonAdmin:
+          "Consulta los ensayos programados con setlists y bloques. Realiza check-in automático por GPS al llegar a la ubicación del ensayo.",
       },
       {
         icon: "Music",

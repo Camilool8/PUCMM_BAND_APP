@@ -8,6 +8,7 @@ import {
   SkipForward,
   X,
   Music,
+  ExternalLink,
 } from "lucide-react";
 import { usePlayer } from "@/contexts/music-player-context";
 import { formatPlayerTime } from "@/lib/youtube-utils";
@@ -28,13 +29,36 @@ export default function MiniPlayer() {
   } = usePlayer();
 
   const handleSpotifyReady = useCallback(() => {
-    dispatch({ type: "SET_STATUS", payload: "playing" });
+    // Don't set "playing" here — onPlayStateChange will set the correct
+    // status once we know whether autoplay actually worked (mobile blocks it).
+  }, []);
+
+  const handleSpotifyEnd = useCallback(() => {
+    dispatch({ type: "NEXT" });
   }, [dispatch]);
+
+  const handleSpotifyTimeUpdate = useCallback(
+    (data: { currentTimeMs: number; durationMs: number }) => {
+      dispatch({ type: "UPDATE_TIME", payload: data });
+    },
+    [dispatch]
+  );
+
+  const handleSpotifyPlayStateChange = useCallback(
+    (isPlaying: boolean) => {
+      dispatch({ type: "SET_STATUS", payload: isPlaying ? "playing" : "paused" });
+    },
+    [dispatch]
+  );
 
   if (!currentSong || !state.isVisible || state.isExpanded) return null;
 
   const isPlaying = state.status === "playing";
   const isSpotify = currentItem?.source === "spotify";
+  const isPreview = isSpotify && state.durationMs > 0 && state.durationMs < 45000;
+  const spotifyUrl = currentItem?.spotifyTrackId
+    ? `https://open.spotify.com/track/${currentItem.spotifyTrackId}`
+    : null;
 
   // Spotify: show the embed widget as the player
   if (isSpotify) {
@@ -65,7 +89,7 @@ export default function MiniPlayer() {
             <p className="text-[10px] text-gray-400 truncate">{currentSong.artist}</p>
           </div>
           <span className="text-[9px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded shrink-0">
-            Spotify
+            {!isPlaying && state.status !== "loading" ? "Toca ▶ abajo" : "Spotify"}
           </span>
           <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
             {hasNext && (
@@ -93,8 +117,25 @@ export default function MiniPlayer() {
             isActive={true}
             compact
             onReady={handleSpotifyReady}
+            onEnd={handleSpotifyEnd}
+            onTimeUpdate={handleSpotifyTimeUpdate}
+            onPlayStateChange={handleSpotifyPlayStateChange}
           />
         </div>
+        {/* Preview detected — offer to open in Spotify app */}
+        {isPreview && spotifyUrl && (
+          <div className="px-3 pb-2" onClick={(e) => e.stopPropagation()}>
+            <a
+              href={spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 text-[11px] font-medium hover:bg-emerald-500/25 transition-colors active:scale-[0.98]"
+            >
+              <ExternalLink size={12} />
+              Abrir en Spotify para escuchar completa
+            </a>
+          </div>
+        )}
       </motion.div>
     );
   }

@@ -10,8 +10,10 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import type { TourStep, TourAction, ModalControls } from "@/lib/tour-engine";
 import { resolveSelector } from "@/lib/tour-engine";
+import { api, type DbUser } from "@/lib/api";
 
 // Storage keys
 const COMPLETED_TOURS_KEY = "band-app-tours-completed-v4";
@@ -83,6 +85,7 @@ interface TourProviderProps {
 export function TourProvider({ children }: TourProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   // Tour state
   const [isRunning, setIsRunning] = useState(false);
@@ -98,6 +101,9 @@ export function TourProvider({ children }: TourProviderProps) {
   const [hasSeenWelcome, setHasSeenWelcome] = useState(false);
   const [completedTours, setCompletedTours] = useState<MiniTourId[]>([]);
   const [lastKnownRole, setLastKnownRole] = useState<UserRole | null>(null);
+
+  // Backend sync tracking
+  const backendSyncedRef = useRef(false);
 
   // Navigation tracking
   const pendingNavigationRef = useRef<string | null>(null);
@@ -124,6 +130,50 @@ export function TourProvider({ children }: TourProviderProps) {
     }
     setHydrated(true);
   }, []);
+
+  // Sync preferences from backend when user data becomes available (cross-device persistence)
+  useEffect(() => {
+    if (!hydrated || backendSyncedRef.current) return;
+
+    const syncFromBackend = (userData: DbUser) => {
+      if (!userData.preferences || backendSyncedRef.current) return;
+      backendSyncedRef.current = true;
+
+      const prefs = userData.preferences;
+
+      // Populate localStorage + state from backend if localStorage is empty (new device)
+      const storedTours = localStorage.getItem(COMPLETED_TOURS_KEY);
+      if (!storedTours && prefs.completedTours?.length) {
+        const tours = prefs.completedTours as MiniTourId[];
+        setCompletedTours(tours);
+        localStorage.setItem(COMPLETED_TOURS_KEY, JSON.stringify(tours));
+      }
+
+      const storedWelcome = localStorage.getItem(WELCOME_SEEN_KEY);
+      if (storedWelcome !== "true" && prefs.hasSeenWelcome) {
+        setHasSeenWelcome(true);
+        localStorage.setItem(WELCOME_SEEN_KEY, "true");
+      }
+    };
+
+    // Check if user data is already cached
+    const existing = queryClient.getQueryData<DbUser>(["user", "me"]);
+    if (existing?.preferences) {
+      syncFromBackend(existing);
+      return;
+    }
+
+    // Subscribe to cache changes and sync when user data arrives
+    const unsubscribe = queryClient.getQueryCache().subscribe(() => {
+      const userData = queryClient.getQueryData<DbUser>(["user", "me"]);
+      if (userData?.preferences) {
+        syncFromBackend(userData);
+        unsubscribe();
+      }
+    });
+
+    return () => unsubscribe();
+  }, [hydrated, queryClient]);
 
   // Handle navigation completion
   useEffect(() => {
@@ -413,12 +463,14 @@ export function TourProvider({ children }: TourProviderProps) {
     });
   }, []);
 
-  // Persistence functions
+  // Persistence functions (localStorage + background backend sync)
   const markTourCompleted = useCallback((id: MiniTourId) => {
     setCompletedTours((prev) => {
       if (prev.includes(id)) return prev;
       const newCompleted = [...prev, id];
       localStorage.setItem(COMPLETED_TOURS_KEY, JSON.stringify(newCompleted));
+      // Background sync to backend
+      api.updatePreferences({ completedTours: newCompleted }).catch(() => {});
       return newCompleted;
     });
   }, []);
@@ -426,6 +478,8 @@ export function TourProvider({ children }: TourProviderProps) {
   const markWelcomeSeen = useCallback(() => {
     setHasSeenWelcome(true);
     localStorage.setItem(WELCOME_SEEN_KEY, "true");
+    // Background sync to backend
+    api.updatePreferences({ hasSeenWelcome: true }).catch(() => {});
   }, []);
 
   const saveRole = useCallback((role: UserRole) => {
@@ -436,8 +490,11 @@ export function TourProvider({ children }: TourProviderProps) {
   const resetAllTours = useCallback(() => {
     setCompletedTours([]);
     setHasSeenWelcome(false);
+    backendSyncedRef.current = false;
     localStorage.removeItem(COMPLETED_TOURS_KEY);
     localStorage.removeItem(WELCOME_SEEN_KEY);
+    // Background sync to backend
+    api.updatePreferences({ completedTours: [], hasSeenWelcome: false }).catch(() => {});
   }, []);
 
   const currentStep = steps[currentStepIndex] || null;

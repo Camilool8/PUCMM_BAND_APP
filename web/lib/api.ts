@@ -5,6 +5,12 @@ const getApiUrl = () => env.apiUrl || "http://localhost:3001";
 
 export type Role = "SUPERADMIN" | "MEMBER" | "STUDENT_GUEST";
 
+export interface UserPreferences {
+  seenAppVersion?: string;
+  completedTours?: string[];
+  hasSeenWelcome?: boolean;
+}
+
 export interface DbUser {
   id: string;
   email: string;
@@ -15,6 +21,7 @@ export interface DbUser {
   instruments: string[];
   phone: string | null;
   bio: string | null;
+  preferences?: UserPreferences | null;
   createdAt: string;
   updatedAt?: string;
 }
@@ -617,6 +624,13 @@ class ApiClient {
     });
   }
 
+  async updatePreferences(data: UserPreferences): Promise<{ preferences: UserPreferences }> {
+    return this.request<{ preferences: UserPreferences }>("/users/me/preferences", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
   async updateUserProfile(id: string, data: UpdateProfileDto): Promise<DbUser> {
     return this.request<DbUser>(`/users/${id}/profile`, {
       method: "PATCH",
@@ -1205,6 +1219,7 @@ class ApiClientProxy {
   login = (email: string, password: string) => this.client.login(email, password);
   register = (email: string, password: string, name?: string) => this.client.register(email, password, name);
   exchangeAzureToken = () => this.client.exchangeAzureToken();
+  updatePreferences = (data: UserPreferences) => this.client.updatePreferences(data);
 }
 
 export const api = new ApiClientProxy();

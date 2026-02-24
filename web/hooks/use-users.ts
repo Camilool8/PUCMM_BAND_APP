@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { api, DbUser, Role, UpdateProfileDto } from "@/lib/api";
+import { api, DbUser, Role, UpdateProfileDto, UserPreferences } from "@/lib/api";
 import { TOAST_MESSAGES } from "@/lib/toast";
 
 export function useUsers() {
@@ -50,6 +50,18 @@ export function useUpdateProfile() {
     onError: () => {
       toast.error(TOAST_MESSAGES.ERROR_GENERIC);
     },
+  });
+}
+
+export function useUpdatePreferences() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UserPreferences) => api.updatePreferences(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "me"] });
+    },
+    // Silent — background sync, no toast
   });
 }
 

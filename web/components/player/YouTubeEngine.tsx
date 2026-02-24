@@ -86,7 +86,15 @@ export default function YouTubeEngine({
       isReadyRef.current = false;
       currentVideoIdRef.current = videoId;
 
-      playerRef.current = new YT.Player(containerRef.current, {
+      // Create a child element for YouTube to replace.
+      // YouTube's API replaces the given element with an iframe,
+      // so we must NOT pass containerRef directly — React needs
+      // containerRef's div to stay in the DOM for clean unmounting.
+      const playerEl = document.createElement("div");
+      containerRef.current.innerHTML = "";
+      containerRef.current.appendChild(playerEl);
+
+      playerRef.current = new YT.Player(playerEl, {
         width: 1,
         height: 1,
         videoId,
@@ -139,6 +147,9 @@ export default function YouTubeEngine({
           // ignore
         }
         playerRef.current = null;
+      }
+      if (containerRef.current) {
+        containerRef.current.innerHTML = "";
       }
       isReadyRef.current = false;
     };

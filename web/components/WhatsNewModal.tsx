@@ -19,6 +19,7 @@ import {
   markVersionSeen,
   type ReleaseHighlight,
 } from "@/lib/release-notes";
+import { api } from "@/lib/api";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   ClipboardCheck,
@@ -36,9 +37,12 @@ const ICON_COLORS: Record<string, string> = {
   Sparkles: "text-amber-400 bg-amber-400/10",
 };
 
-function HighlightItem({ highlight }: { highlight: ReleaseHighlight }) {
+function HighlightItem({ highlight, isAdmin }: { highlight: ReleaseHighlight; isAdmin: boolean }) {
   const Icon = ICON_MAP[highlight.icon] || Sparkles;
   const colorClass = ICON_COLORS[highlight.icon] || "text-gray-400 bg-gray-400/10";
+  const description = !isAdmin && highlight.descriptionNonAdmin
+    ? highlight.descriptionNonAdmin
+    : highlight.description;
 
   return (
     <div className="flex gap-3 p-3 rounded-xl bg-surface-100/40 border border-surface-200/30">
@@ -47,14 +51,14 @@ function HighlightItem({ highlight }: { highlight: ReleaseHighlight }) {
       </div>
       <div className="min-w-0 flex-1">
         <h4 className="text-sm font-semibold text-white">{highlight.title}</h4>
-        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{highlight.description}</p>
+        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>
       </div>
     </div>
   );
 }
 
 export default function WhatsNewModal() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, dbUser } = useAuth();
   const { hasSeenWelcome, isRunning: isTourRunning } = useTour();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -62,15 +66,26 @@ export default function WhatsNewModal() {
     if (!isAuthenticated || isLoading || isTourRunning || !hasSeenWelcome) return;
 
     const seenVersion = getSeenVersion();
-    if (seenVersion !== APP_VERSION) {
-      // Small delay to avoid clashing with other modals/tours
-      const timer = setTimeout(() => setIsOpen(true), 2000);
-      return () => clearTimeout(timer);
+    const backendVersion = dbUser?.preferences?.seenAppVersion;
+
+    // Skip if either localStorage or backend already has the current version
+    if (seenVersion === APP_VERSION || backendVersion === APP_VERSION) {
+      // Sync localStorage if backend had it but localStorage didn't
+      if (seenVersion !== APP_VERSION && backendVersion === APP_VERSION) {
+        markVersionSeen(APP_VERSION);
+      }
+      return;
     }
-  }, [isAuthenticated, isLoading, isTourRunning, hasSeenWelcome]);
+
+    // Small delay to avoid clashing with other modals/tours
+    const timer = setTimeout(() => setIsOpen(true), 2000);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, isLoading, isTourRunning, hasSeenWelcome, dbUser]);
 
   const handleDismiss = () => {
     markVersionSeen(APP_VERSION);
+    // Background sync to backend
+    api.updatePreferences({ seenAppVersion: APP_VERSION }).catch(() => {});
     setIsOpen(false);
   };
 
@@ -87,7 +102,7 @@ export default function WhatsNewModal() {
       </Modal.Header>
       <Modal.Body className="space-y-3">
         {currentRelease.highlights.map((highlight, idx) => (
-          <HighlightItem key={idx} highlight={highlight} />
+          <HighlightItem key={idx} highlight={highlight} isAdmin={isAdmin} />
         ))}
       </Modal.Body>
       <div className="shrink-0 px-6 py-4 border-t border-white/5 bg-surface-100/30">
